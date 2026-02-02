@@ -568,7 +568,7 @@ def wrap_text(text, font, max_width, draw):
 
 def draw_gradient_background(draw, x1, y1, x2, y2, color_start, color_end):
     """Dessine un dégradé vertical"""
-    height = y2 - y1
+    height = int(y2 - y1)
     for i in range(height):
         ratio = i / height
         r = int(color_start[0] * (1 - ratio) + color_end[0] * ratio)
