@@ -567,14 +567,20 @@ def wrap_text(text, font, max_width, draw):
     return lines
 
 def draw_gradient_background(draw, x1, y1, x2, y2, color_start, color_end):
-    """Dessine un dégradé vertical"""
-    height = max(1, int(round(y2 - y1)))
-    for i in range(int(height)):
+    """Dessine un dégradé vertical (safe float → int)"""
+    height = int(max(1, round(y2 - y1)))
+
+    for i in range(height):
         ratio = i / height
         r = int(color_start[0] * (1 - ratio) + color_end[0] * ratio)
         g = int(color_start[1] * (1 - ratio) + color_end[1] * ratio)
         b = int(color_start[2] * (1 - ratio) + color_end[2] * ratio)
-        draw.line([(x1, y1 + i), (x2, y1 + i)], fill=(r, g, b))
+
+        draw.line(
+            [(int(x1), int(y1 + i)), (int(x2), int(y1 + i))],
+            fill=(r, g, b)
+        )
+
 
 def draw_course_card(draw, fonts, x, y, width, height, event, show_details=True):
     """Dessine une carte de cours stylisée avec effets visuels"""
