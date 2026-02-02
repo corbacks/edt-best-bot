@@ -1,0 +1,14 @@
+# 🎓 EDT Bot L2 INFO - Requirements
+# ═══════════════════════════════════════════════════════════════
+# Python 3.11+
+# ═══════════════════════════════════════════════════════════════
+
+# Core dependencies
+requests>=2.31.0        # HTTP requests pour iCal et webhooks Discord
+Pillow>=10.0.0          # Génération d'images (PIL fork)
+
+# Optional (pour développement local uniquement)
+# python-dotenv>=1.0.0  # Gestion des variables d'environnement (.env)
+# pytest>=7.4.0         # Tests unitaires
+# black>=23.0.0         # Formatage du code
+# flake8>=6.0.0         # Linting
