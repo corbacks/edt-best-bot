@@ -1,0 +1,151 @@
+name: 🎓 EDT Bot L2 INFO - Final
+
+on:
+  schedule:
+    # ⚠️ UNE SEULE EXÉCUTION PAR SEMAINE : Dimanche à 18h
+    # Envoie la semaine SUIVANTE (lundi à vendredi)
+    
+    - cron: "0 17 * * 0"  # Hiver (nov-mars): 18h Paris = 17h UTC
+    #- cron: "0 16 * * 0"  # Été (mars-oct): 18h Paris = 16h UTC (décommenter en été)
+    
+  workflow_dispatch:
+    inputs:
+      force_send:
+        description: '🚀 Forcer l''envoi immédiat'
+        required: false
+        default: true
+        type: boolean
+      test_group:
+        description: '🧪 Groupe à tester (optionnel)'
+        required: false
+        type: choice
+        options:
+          - 'Tous les groupes'
+          - 'Groupe 1'
+          - 'Groupe 2' 
+          - 'Groupe 3'
+          - 'CM Communs'
+      week_mode:
+        description: '📆 Mode de semaine'
+        required: false
+        type: choice
+        default: 'next'
+        options:
+          - 'next'        # Semaine suivante (par défaut)
+          - 'current'     # Semaine courante (test)
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  send-edt:
+    name: 📤 Génération et Envoi EDT
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 Installation dépendances
+        run: |
+          echo "📦 Installation..."
+          python -m pip install --upgrade pip
+          pip install --no-cache-dir requests Pillow
+          echo "✅ Dépendances installées"
+      
+      - name: 🕐 Informations temporelles
+        run: |
+          echo "════════════════════════════════════════"
+          echo "⏰ INFORMATIONS"
+          echo "════════════════════════════════════════"
+          echo "🌍 UTC   : $(date -u '+%Y-%m-%d %H:%M:%S')"
+          echo "🇫🇷 Paris: $(TZ='Europe/Paris' date '+%Y-%m-%d %H:%M:%S')"
+          echo "📅 Jour  : $(TZ='Europe/Paris' date '+%A %d %B %Y')"
+          echo "════════════════════════════════════════"
+      
+      - name: 🎓 Génération et envoi EDT
+        env:
+          WEEK_MODE: ${{ inputs.week_mode || 'next' }}
+          # Décommentez et configurez si vous utilisez les secrets GitHub :
+          # WEBHOOK_CM: ${{ secrets.WEBHOOK_CM }}
+          # WEBHOOK_G1: ${{ secrets.WEBHOOK_G1 }}
+          # WEBHOOK_G2: ${{ secrets.WEBHOOK_G2 }}
+          # WEBHOOK_G3: ${{ secrets.WEBHOOK_G3 }}
+        run: |
+          echo "════════════════════════════════════════"
+          echo "🚀 EDT BOT FINAL - ULTRA-LISIBLE"
+          echo "════════════════════════════════════════"
+          echo ""
+          echo "✨ Améliorations:"
+          echo "  • 🎨 Design ultra-lisible"
+          echo "  • 📐 Coins arrondis (radius 10px)"
+          echo "  • 😀 Emojis partout (lisibilité max)"
+          echo "  • 🚫 Détection cours annulés"
+          echo "  • 📝 Détection examens/partiels"
+          echo "  • 📊 Statistiques enrichies"
+          echo "  • 💬 Message Discord propre"
+          echo ""
+          echo "📤 Distribution:"
+          echo "  • 📚 CM Communs"
+          echo "  • 📘 Groupe 1"
+          echo "  • 📕 Groupe 2"
+          echo "  • 📗 Groupe 3"
+          echo ""
+          echo "════════════════════════════════════════"
+          echo ""
+          
+          python edt_bot_final.py
+      
+      - name: 📊 Upload logs (si échec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edt-logs-${{ github.run_number }}
+          path: |
+            *.log
+            *.png
+          retention-days: 7
+          if-no-files-found: ignore
+      
+      - name: 📈 Résumé
+        if: always()
+        run: |
+          echo ""
+          echo "════════════════════════════════════════"
+          echo "📈 RÉSUMÉ"
+          echo "════════════════════════════════════════"
+          echo "✅ Exécution terminée"
+          echo "🕐 $(TZ='Europe/Paris' date '+%Y-%m-%d %H:%M:%S')"
+          echo "⏱️  Run #${{ github.run_number }}"
+          echo "════════════════════════════════════════"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 📝 NOTES
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# EXÉCUTION AUTOMATIQUE:
+#   - Dimanche 18h : Envoie la semaine SUIVANTE uniquement
+#   - Plus d'envoi le mercredi (supprimé comme demandé)
+#
+# CHANGEMENT HEURE ÉTÉ/HIVER:
+#   Mars     : Décommentez "# Été", commentez "Hiver"
+#   Octobre  : Décommentez "Hiver", commentez "# Été"
+#
+# SÉCURITÉ WEBHOOKS:
+#   1. GitHub : Settings > Secrets > Actions
+#   2. Créez: WEBHOOK_CM, WEBHOOK_G1, WEBHOOK_G2, WEBHOOK_G3
+#   3. Décommentez les lignes env: WEBHOOK_* ci-dessus
+#   4. Dans edt_bot_final.py ligne 96, remplacez par:
+#      WEBHOOKS = {
+#          "CM Communs": os.environ.get("WEBHOOK_CM"),
+#          ...
+#      }
+#
+# ═══════════════════════════════════════════════════════════════════════════════
