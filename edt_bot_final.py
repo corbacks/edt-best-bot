@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """
-🎓 EDT Bot L2 INFO - VERSION FINALE OPTIMALE
+🎓 EDT Bot L2 INFO - VERSION FINALE CORRIGÉE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Système de couleurs optimisé:
-- Couleur principale = MATIÈRE (cohérente par matière)
-- Bande latérale colorée = TYPE (CM/TD/TP)
-- Layout: Horaire → Matière - Type → Salle → Prof
-- Horaires en blanc pur et gras pour visibilité max
+Extraction correcte des matières depuis le format:
+"Gr1 - L2 INFO - [MATIÈRE] - [ENSEIGNANT] - [TYPE]"
+
+Layout optimisé:
+1. HORAIRES (énorme, blanc pur, gras)
+2. MATIÈRE - TYPE (gros, gras)
+3. SALLE
+4. PROFESSEUR
+
+Couleur par matière, bande latérale par type.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 import os
@@ -34,7 +39,7 @@ COLORS = {
     'shadow': (0, 0, 0),
 }
 
-# Couleurs par TYPE de cours (pour la bande latérale)
+# Couleurs par TYPE de cours (bande latérale)
 TYPE_COLORS = {
     'CM': (138, 80, 183),      # Violet
     'TD': (230, 145, 56),      # Orange
@@ -42,11 +47,11 @@ TYPE_COLORS = {
     'Examen': (231, 76, 60),   # Rouge
     'Partiel': (231, 76, 60),  # Rouge
     'Projet': (46, 204, 113),  # Vert
-    'Tutorat': (241, 196, 15), # Jaune (remplace annulé)
+    'Tutorat': (241, 196, 15), # Jaune
     'default': (100, 110, 130) # Gris
 }
 
-# Palette de couleurs pour les MATIÈRES (cohérentes)
+# Palette couleurs MATIÈRES
 SUBJECT_COLOR_PALETTE = [
     (65, 90, 140),      # Bleu foncé
     (85, 110, 95),      # Vert foncé
@@ -60,10 +65,12 @@ SUBJECT_COLOR_PALETTE = [
     (100, 80, 70),      # Terre cuite
     (70, 100, 95),      # Turquoise foncé
     (105, 75, 85),      # Rose foncé
+    (90, 95, 80),       # Olive
+    (80, 70, 95),       # Lavande foncé
 ]
 
 SPECIAL_COLORS = {
-    'makeup': (180, 120, 30),  # Orange doré pour rattrapage
+    'makeup': (180, 120, 30),
 }
 
 SPECIAL_EVENTS = {
@@ -80,10 +87,6 @@ SPECIAL_EVENTS = {
     'contrôle': 'CONTROLE',
     'controle': 'CONTROLE',
 }
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 🔐 CONFIGURATION
-# ═══════════════════════════════════════════════════════════════════════════════
 
 WEBHOOKS = {
     "CM Communs": os.environ.get("WEBHOOK_CM", "https://discordapp.com/api/webhooks/1420864305506549912/9MyUp5eggiLNDyuROGxu7tBRTae8URNyTmluZzjN2jrbMphlc5kffeJOiKL-uqWeKHWs"),
@@ -109,28 +112,22 @@ ROLE_IDS = {
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
 
-# Cache des couleurs par matière
 subject_color_cache = {}
 
 def get_subject_color(subject_name):
-    """Retourne une couleur cohérente pour chaque matière"""
+    """Couleur cohérente par matière"""
     if not subject_name:
         return SUBJECT_COLOR_PALETTE[0]
     
     if subject_name in subject_color_cache:
         return subject_color_cache[subject_name]
     
-    # Générer un hash cohérent basé sur le nom de la matière
     hash_value = int(hashlib.md5(subject_name.encode()).hexdigest(), 16)
     color_index = hash_value % len(SUBJECT_COLOR_PALETTE)
     color = SUBJECT_COLOR_PALETTE[color_index]
     
     subject_color_cache[subject_name] = color
     return color
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# ⏰ GESTION DU TEMPS
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def get_paris_offset(dt):
     year = dt.year
@@ -150,10 +147,6 @@ def get_paris_now():
     utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
     offset = get_paris_offset(utc_now)
     return utc_now + timedelta(hours=offset)
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 🌐 RÉCUPÉRATION DES DONNÉES
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def fetch_with_retry(url, max_retries=5, initial_timeout=30):
     for attempt in range(max_retries):
@@ -207,10 +200,6 @@ def determine_week_mode():
         return 1, "suivante"
     return 1, "suivante"
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 📝 PARSING
-# ═══════════════════════════════════════════════════════════════════════════════
-
 def parse_ical_datetime(dt_string):
     try:
         dt_clean = dt_string.strip()
@@ -252,6 +241,12 @@ def detect_special_event(summary, description=""):
     return None
 
 def extract_course_info(summary, description=""):
+    """
+    Extraction CORRECTE depuis le format:
+    "Gr1 - L2 INFO - [MATIÈRE] - [ENSEIGNANT] - [TYPE]"
+    
+    Exemple: "Gr1 - L2 INFO - Anglais - M. Moors Anthony - TD"
+    """
     course_info = {
         'type_cours': '',
         'matiere': '',
@@ -265,6 +260,7 @@ def extract_course_info(summary, description=""):
     if not summary:
         return course_info
     
+    # Détecter événements spéciaux
     special = detect_special_event(summary, description)
     course_info['special_event'] = special
     
@@ -275,39 +271,54 @@ def extract_course_info(summary, description=""):
     if special and 'RATTRAPAGE' in special:
         course_info['is_makeup'] = True
     
-    if not course_info['is_tutorat']:
-        type_patterns = [(r'\b(CM|TD|TP|Examen|Partiel|Projet|Soutenance)\b', 'type_cours')]
+    # PARSING SPÉCIFIQUE DU FORMAT
+    # Format: "Gr1 - L2 INFO - [MATIÈRE] - [ENSEIGNANT] - [TYPE]"
+    parts = [p.strip() for p in summary.split(' - ')]
+    
+    if len(parts) >= 5:
+        # parts[0] = "Gr1" ou "Gr2" ou "Gr3"
+        # parts[1] = "L2 INFO"
+        # parts[2] = MATIÈRE
+        # parts[3] = ENSEIGNANT
+        # parts[4] = TYPE
         
-        for pattern, field in type_patterns:
-            match = re.search(pattern, summary, re.IGNORECASE)
-            if match:
-                course_info[field] = match.group(1).upper()
-                break
+        course_info['matiere'] = parts[2]
+        course_info['professeur'] = parts[3]
+        
+        if not course_info['is_tutorat']:
+            course_info['type_cours'] = parts[4].upper()
+        
+        # Extraire le groupe
+        if parts[0].startswith('Gr'):
+            course_info['groupe'] = parts[0]
     
-    parts = re.split(r'[-–—]', summary)
-    if len(parts) >= 2:
-        course_info['matiere'] = parts[1].strip()
-    else:
-        matiere = re.sub(r'^(CM|TD|TP|Examen|Partiel|Projet|Tutorat)\s*-?\s*', '', summary, flags=re.IGNORECASE)
-        course_info['matiere'] = matiere.strip()
+    elif len(parts) >= 4:
+        # Format plus court, adapter
+        course_info['matiere'] = parts[2] if len(parts) > 2 else ''
+        if len(parts) > 3 and not course_info['is_tutorat']:
+            # Le dernier est probablement le type
+            last = parts[-1].upper()
+            if last in ['CM', 'TD', 'TP', 'EXAMEN', 'PARTIEL', 'PROJET']:
+                course_info['type_cours'] = last
+                # L'avant-dernier est le prof
+                if len(parts) > 3:
+                    course_info['professeur'] = parts[-2]
     
-    course_info['matiere'] = re.sub(r'\s*\(.*?\)\s*', '', course_info['matiere'])
+    # Fallback: extraire depuis la DESCRIPTION si disponible
+    if description and not course_info['matiere']:
+        matiere_match = re.search(r'Matière\s*:\s*(.+)', description, re.IGNORECASE)
+        if matiere_match:
+            course_info['matiere'] = matiere_match.group(1).strip()
     
-    prof_patterns = [
-        r'(?:Prof|Enseignant|Professeur)[:\s]+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)',
-        r'\bM\.\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
-        r'\bMme\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
-    ]
+    if description and not course_info['professeur']:
+        prof_match = re.search(r'Enseignant\s*:\s*(.+)', description, re.IGNORECASE)
+        if prof_match:
+            course_info['professeur'] = prof_match.group(1).strip()
     
-    for pattern in prof_patterns:
-        match = re.search(pattern, description + " " + summary, re.IGNORECASE | re.MULTILINE)
-        if match:
-            course_info['professeur'] = match.group(1)
-            break
-    
-    groupe_match = re.search(r'Gr[ou]*pe?\s*(\d+)', summary, re.IGNORECASE)
-    if groupe_match:
-        course_info['groupe'] = f"Gr{groupe_match.group(1)}"
+    if description and not course_info['type_cours'] and not course_info['is_tutorat']:
+        type_match = re.search(r'Type\s*:\s*(\w+)', description, re.IGNORECASE)
+        if type_match:
+            course_info['type_cours'] = type_match.group(1).upper()
     
     return course_info
 
@@ -432,24 +443,32 @@ def calculate_statistics(week_events):
     
     return stats
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 🎨 GÉNÉRATION IMAGE
-# ═══════════════════════════════════════════════════════════════════════════════
-
 def load_fonts():
     fonts = {}
     try:
+        # Polices ADAPTATIVES selon espace disponible
         fonts['title'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
         fonts['date'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
         fonts['header'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 17)
         fonts['day_num'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
-        fonts['event_time'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)  # ÉNORME et GRAS
-        fonts['event_matiere'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 17)
+        
+        # Polices événements (on va les adapter dynamiquement)
+        fonts['event_time_huge'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
+        fonts['event_time_big'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+        fonts['event_time'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
+        
+        fonts['event_matiere_huge'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 19)
+        fonts['event_matiere_big'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 17)
+        fonts['event_matiere'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
+        
+        fonts['event_info_big'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
         fonts['event_info'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
+        fonts['event_info_small'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 13)
+        
         fonts['small'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
         fonts['hour'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
     except:
-        fonts = {k: ImageFont.load_default() for k in ['title', 'date', 'header', 'day_num', 'event_time', 'event_matiere', 'event_info', 'small', 'hour']}
+        fonts = {k: ImageFont.load_default() for k in ['title', 'date', 'header', 'day_num', 'event_time_huge', 'event_time_big', 'event_time', 'event_matiere_huge', 'event_matiere_big', 'event_matiere', 'event_info_big', 'event_info', 'event_info_small', 'small', 'hour']}
     
     return fonts
 
@@ -486,8 +505,8 @@ def draw_centered_text(draw, text, font, y, x_start, x_end, color):
     draw.text((x, y), text, fill=color, font=font)
     return bbox[3] - bbox[1]
 
-def create_optimal_edt(group_name, week_events, week_dates):
-    """Crée l'EDT avec couleurs par matière et bande latérale par type"""
+def create_final_edt(group_name, week_events, week_dates):
+    """EDT final avec extraction correcte et texte adaptatif"""
     
     WIDTH = 1600
     HEIGHT = 1100
@@ -579,21 +598,20 @@ def create_optimal_edt(group_name, week_events, week_dates):
             if event_height < 10:
                 continue
             
-            # COULEUR PRINCIPALE = MATIÈRE
+            # Couleur par MATIÈRE
             matiere = event['course_info']['matiere'] or 'Défaut'
             main_color = get_subject_color(matiere)
             
-            # COULEUR BANDE LATÉRALE = TYPE
+            # Couleur bande par TYPE
             course_type = event['course_info']['type_cours'] or 'default'
             side_color = TYPE_COLORS.get(course_type, TYPE_COLORS['default'])
             
-            # Rattrapage -> couleur spéciale
             if event['course_info']['is_makeup']:
                 main_color = SPECIAL_COLORS['makeup']
             
             padding = 4
             
-            # Fond principal (couleur matière)
+            # Fond principal
             draw.rounded_rectangle(
                 [x_day + padding, y_event_start + padding, 
                  x_day + DAY_WIDTH - padding, y_event_end - padding],
@@ -601,7 +619,7 @@ def create_optimal_edt(group_name, week_events, week_dates):
                 fill=main_color
             )
             
-            # BANDE LATÉRALE GAUCHE (couleur type)
+            # Bande latérale
             band_width = 8
             draw.rounded_rectangle(
                 [x_day + padding, y_event_start + padding,
@@ -610,40 +628,56 @@ def create_optimal_edt(group_name, week_events, week_dates):
                 fill=side_color
             )
             
-            # CONTENU CENTRÉ
+            # CONTENU ADAPTATIF
             x_start = x_day + padding + band_width + 8
             x_end = x_day + DAY_WIDTH - padding - 8
             current_y = y_event_start + 12
             
-            # 1. HORAIRES (BLANC PUR, GRAS, ÉNORME)
+            available_height = event_height - 24
+            
+            # Choisir la taille des polices selon l'espace
+            if available_height > 120:
+                font_time = fonts['event_time_huge']
+                font_matiere = fonts['event_matiere_huge']
+                font_info = fonts['event_info_big']
+            elif available_height > 90:
+                font_time = fonts['event_time_big']
+                font_matiere = fonts['event_matiere_big']
+                font_info = fonts['event_info']
+            else:
+                font_time = fonts['event_time']
+                font_matiere = fonts['event_matiere']
+                font_info = fonts['event_info_small']
+            
+            # 1. HORAIRES
             start_time = event['start'].strftime('%H:%M')
             end_time = event['end'].strftime('%H:%M')
             time_text = f"{start_time} - {end_time}"
-            h = draw_centered_text(draw, time_text, fonts['event_time'], current_y, x_start, x_end, (255, 255, 255))
+            h = draw_centered_text(draw, time_text, font_time, current_y, x_start, x_end, (255, 255, 255))
             current_y += h + 10
             
-            # 2. MATIÈRE - TYPE (centré)
+            # 2. MATIÈRE - TYPE
             matiere_display = matiere[:28]
             type_display = f" - {course_type}" if course_type and course_type != 'default' else ""
             matiere_text = f"{matiere_display}{type_display}"
             
-            lines = wrap_text(matiere_text, fonts['event_matiere'], (x_end - x_start), draw)
+            lines = wrap_text(matiere_text, font_matiere, (x_end - x_start), draw)
             for line in lines[:2]:
                 if current_y < y_event_end - 40:
-                    h = draw_centered_text(draw, line, fonts['event_matiere'], current_y, x_start, x_end, COLORS['text_bright'])
+                    h = draw_centered_text(draw, line, font_matiere, current_y, x_start, x_end, COLORS['text_bright'])
                     current_y += h + 6
             
-            # 3. SALLE (centrée)
+            # 3. SALLE
             location = event.get('location', '')
             if location and current_y < y_event_end - 28:
                 location_short = location[:26]
-                h = draw_centered_text(draw, location_short, fonts['event_info'], current_y, x_start, x_end, COLORS['text_bright'])
+                h = draw_centered_text(draw, location_short, font_info, current_y, x_start, x_end, COLORS['text_bright'])
                 current_y += h + 6
             
-            # 4. PROFESSEUR (centré)
+            # 4. PROFESSEUR
             prof = event['course_info']['professeur']
             if prof and current_y < y_event_end - 16:
-                draw_centered_text(draw, prof, fonts['event_info'], current_y, x_start, x_end, COLORS['text_bright'])
+                draw_centered_text(draw, prof, font_info, current_y, x_start, x_end, COLORS['text_bright'])
     
     # ═══ FOOTER ═══
     footer_y = HEIGHT - FOOTER_HEIGHT
@@ -684,10 +718,6 @@ def create_optimal_edt(group_name, week_events, week_dates):
     
     logger.info(f"✅ Image générée: {WIDTH}x{HEIGHT}px")
     return img
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 📤 ENVOI DISCORD
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def send_to_discord(group_name, image, week_dates, stats):
     webhook_url = WEBHOOKS.get(group_name)
@@ -746,12 +776,8 @@ def send_to_discord(group_name, image, week_dates, stats):
         logger.error(f"❌ Erreur: {e}")
         return False
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 🚀 MAIN
-# ═══════════════════════════════════════════════════════════════════════════════
-
 def main():
-    print("🎓 EDT BOT - VERSION FINALE OPTIMALE")
+    print("🎓 EDT BOT - VERSION FINALE CORRIGÉE")
     start_time = time.time()
     
     week_offset, _ = determine_week_mode()
@@ -770,7 +796,7 @@ def main():
             week_events = filter_events_for_week(events, week_dates)
             stats = calculate_statistics(week_events)
             
-            image = create_optimal_edt(group_name, week_events, week_dates)
+            image = create_final_edt(group_name, week_events, week_dates)
             
             if send_to_discord(group_name, image, week_dates, stats):
                 success_count += 1
@@ -779,6 +805,8 @@ def main():
             
         except Exception as e:
             logger.error(f"❌ {group_name}: {e}")
+            import traceback
+            traceback.print_exc()
     
     print(f"✅ {success_count}/{len(EDT_URLS)} envoyés en {time.time()-start_time:.1f}s")
     return 0 if success_count == len(EDT_URLS) else 1
