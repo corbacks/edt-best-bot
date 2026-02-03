@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-🎓 EDT Bot L2 INFO - VERSION FINALE PERFECTIONNÉE
+🎓 EDT Bot L2 INFO - VERSION FINALE ULTIME
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Corrections finales:
-- Affichage CM corrigé (problème débordement)
-- Rattrapage = VERT (au lieu d'orange)
-- Couleurs cohérentes par matière spécifique
-- Apostrophe ' au lieu de ? dans "Système d'exploitation"
+- Nettoyage \n dans professeur (plus de "Salle : ..." affiché)
+- Système d'exploitation en VERT vif
+- Couleurs vives et distinctes pour TOUTES les matières
+- Bug CM Groupe 3 corrigé
+- Apostrophe ' au lieu de ? partout
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 import os
@@ -45,56 +46,54 @@ TYPE_COLORS = {
     'default': (100, 110, 130) # Gris
 }
 
-# COULEURS SPÉCIFIQUES PAR MATIÈRE
+# COULEURS VIVES PAR MATIÈRE (basées sur l'analyse de l'ICS)
 SUBJECT_SPECIFIC_COLORS = {
-    # Algorithmique
-    'Algorithmique et programmati': (45, 85, 140),      # Bleu foncé
-    'Algorithmique et programma': (45, 85, 140),
-    'Algorithmique': (45, 85, 140),
+    # Algorithmique - BLEU VIF
+    'Algorithmique et programmation': (30, 100, 180),
+    'Algorithmique programmation 5': (30, 100, 180),
+    'Algorithmique': (30, 100, 180),
     
-    # Statistiques
-    'Statistique': (180, 140, 40),                       # Jaune/Or
-    'Statistiques': (180, 140, 40),
+    # Statistiques & Probas - ORANGE/OR VIF
+    'Statistique': (220, 150, 30),
+    'Probabilités': (200, 130, 40),
+    'Maths pour l\'info': (180, 110, 50),
     
-    # Système d\'exploitation (corrigé avec apostrophe)
-    'Système d\'exploitation 1': (60, 120, 75),         # Vert foncé
-    'Système d\'exploitation': (60, 120, 75),
-    'Système d exploitation': (60, 120, 75),             # Au cas où
+    # Système d'exploitation - VERT VIF (comme demandé!)
+    'Système d\'exploitation 1': (40, 160, 70),
+    'Système d exploitation': (40, 160, 70),
     
-    # Anglais
-    'Anglais': (140, 50, 60),                           # Rouge bordeaux
+    # Anglais - ROUGE VIF
+    'Anglais': (180, 40, 60),
     
-    # Informatique pour le web
-    'Informatique pour le web': (70, 100, 120),         # Bleu-gris
-    'Informatique pour le w': (70, 100, 120),
+    # Web & Réseaux - CYAN/TURQUOISE VIF
+    'Informatique pour le web': (0, 140, 180),
     
-    # Programmation avancée Java
-    'Programmation avancée java': (90, 70, 50),         # Marron
-    'Programmation avancée jav': (90, 70, 50),
-    'Programmation avancée ja': (90, 70, 50),
+    # Java & Programmation - MARRON/CHOCOLAT VIF
+    'Programmation avancée java': (140, 70, 30),
+    'Java avancé': (160, 80, 40),
+    'Java fonctionnel': (140, 90, 50),
+    'Programmation C': (120, 60, 40),
     
-    # Bases de données
-    'Base de données': (100, 60, 90),                   # Violet foncé
-    'Bases de données': (100, 60, 90),
-    'BDD': (100, 60, 90),
+    # Bases de données - VIOLET FONCÉ VIF
+    'Bases de données': (120, 40, 140),
+    'Base de données': (120, 40, 140),
+    'BDD': (120, 40, 140),
     
-    # Réseaux
-    'Réseaux': (50, 90, 100),                           # Cyan foncé
-    'Réseau': (50, 90, 100),
+    # MPI - ROSE/MAGENTA VIF
+    'MPI': (180, 50, 120),
     
-    # Mathématiques
-    'Mathématiques': (85, 75, 95),                      # Lavande foncé
-    'Maths': (85, 75, 95),
+    # Événements spéciaux - Couleurs distinctes
+    'Tutorat': (200, 180, 40),
+    'Kursus Festival de Rentrée': (100, 60, 140),
+    'Réunion de rentrée': (80, 80, 120),
+    'matière à préciser': (100, 100, 110),
     
-    # Projet
-    'Projet': (70, 110, 80),                            # Vert moyen
-    
-    # Défaut
-    'default': (75, 85, 95)
+    # Défaut - PAS DE GRIS FADE, utiliser bleu-violet
+    'default': (80, 90, 140)
 }
 
 SPECIAL_COLORS = {
-    'makeup': (60, 130, 75),  # VERT pour rattrapage (changé!)
+    'makeup': (40, 160, 70),  # VERT VIF pour rattrapage
 }
 
 SPECIAL_EVENTS = {
@@ -106,6 +105,7 @@ SPECIAL_EVENTS = {
     'partiel': 'PARTIEL',
     'seconde chance': 'RATTRAPAGE',
     '2nde chance': 'RATTRAPAGE',
+    '2è chance': 'RATTRAPAGE',
     'rattrapage': 'RATTRAPAGE',
     'soutenance': 'SOUTENANCE',
     'contrôle': 'CONTROLE',
@@ -137,16 +137,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(
 logger = logging.getLogger(__name__)
 
 def get_subject_color(subject_name):
-    """Retourne une couleur cohérente par matière"""
+    """Retourne une couleur vive par matière"""
     if not subject_name:
         return SUBJECT_SPECIFIC_COLORS['default']
     
-    # Normaliser le nom (enlever espaces multiples, mettre en minuscule)
+    # Normaliser
     normalized = ' '.join(subject_name.lower().split())
     
-    # Chercher correspondance exacte ou partielle
+    # Chercher correspondance
     for key, color in SUBJECT_SPECIFIC_COLORS.items():
-        if key.lower() in normalized or normalized.startswith(key.lower()[:15]):
+        if key.lower() in normalized or normalized.startswith(key.lower()[:10]):
             return color
     
     # Défaut
@@ -264,21 +264,25 @@ def detect_special_event(summary, description=""):
     return None
 
 def fix_text_encoding(text):
-    """Corrige les problèmes d'encodage, notamment ? → '"""
+    """Corrige ? → ' et nettoie les \n"""
     if not text:
         return text
     
-    # Remplacer les ? qui devraient être des apostrophes
-    # Contextes courants : d?exploitation, l?info, etc.
-    text = re.sub(r'd\?([a-zA-Z])', r"d'\1", text)
-    text = re.sub(r'l\?([a-zA-Z])', r"l'\1", text)
-    text = re.sub(r'n\?([a-zA-Z])', r"n'\1", text)
-    text = re.sub(r's\?([a-zA-Z])', r"s'\1", text)
+    # Corriger apostrophes
+    text = re.sub(r'd\?([a-zA-Zé])', r"d'\1", text)
+    text = re.sub(r'l\?([a-zA-Zé])', r"l'\1", text)
+    text = re.sub(r'n\?([a-zA-Zé])', r"n'\1", text)
+    text = re.sub(r's\?([a-zA-Zé])', r"s'\1", text)
+    text = re.sub(r'¿', "'", text)
     
-    return text
+    # NETTOYER LES \n (caractères litéraux, pas vrais retours à la ligne)
+    text = text.replace('\\n', ' ')
+    text = text.replace('\n', ' ')
+    
+    return text.strip()
 
 def extract_course_info(summary, description=""):
-    """Extraction avec correction d'encodage"""
+    """Extraction avec nettoyage complet"""
     course_info = {
         'type_cours': '',
         'matiere': '',
@@ -292,7 +296,7 @@ def extract_course_info(summary, description=""):
     if not summary:
         return course_info
     
-    # Corriger l'encodage
+    # Corriger encodage
     summary = fix_text_encoding(summary)
     description = fix_text_encoding(description)
     
@@ -311,7 +315,7 @@ def extract_course_info(summary, description=""):
     
     if len(parts) >= 5:
         course_info['matiere'] = fix_text_encoding(parts[2])
-        course_info['professeur'] = parts[3]
+        course_info['professeur'] = fix_text_encoding(parts[3])
         
         if not course_info['is_tutorat']:
             course_info['type_cours'] = parts[4].upper()
@@ -326,23 +330,30 @@ def extract_course_info(summary, description=""):
             if last in ['CM', 'TD', 'TP', 'EXAMEN', 'PARTIEL', 'PROJET']:
                 course_info['type_cours'] = last
                 if len(parts) > 3:
-                    course_info['professeur'] = parts[-2]
+                    course_info['professeur'] = fix_text_encoding(parts[-2])
     
-    # Fallback description
-    if description and not course_info['matiere']:
-        matiere_match = re.search(r'Matière\s*:\s*(.+)', description, re.IGNORECASE)
-        if matiere_match:
-            course_info['matiere'] = fix_text_encoding(matiere_match.group(1).strip())
-    
-    if description and not course_info['professeur']:
-        prof_match = re.search(r'Enseignant\s*:\s*(.+)', description, re.IGNORECASE)
-        if prof_match:
-            course_info['professeur'] = prof_match.group(1).strip()
-    
-    if description and not course_info['type_cours'] and not course_info['is_tutorat']:
-        type_match = re.search(r'Type\s*:\s*(\w+)', description, re.IGNORECASE)
-        if type_match:
-            course_info['type_cours'] = type_match.group(1).upper()
+    # Fallback DESCRIPTION (et NETTOYER les \n!)
+    if description:
+        # Extraire UNIQUEMENT le nom du prof (avant le premier \n)
+        if not course_info['professeur']:
+            prof_match = re.search(r'Enseignant\s*:\s*([^\n\\]+)', description, re.IGNORECASE)
+            if prof_match:
+                prof_raw = prof_match.group(1).strip()
+                # Couper au premier \n ou "Salle :"
+                prof_clean = re.split(r'\\n|Salle\s*:', prof_raw)[0].strip()
+                course_info['professeur'] = fix_text_encoding(prof_clean)
+        
+        if not course_info['matiere']:
+            matiere_match = re.search(r'Matière\s*:\s*([^\n\\]+)', description, re.IGNORECASE)
+            if matiere_match:
+                matiere_raw = matiere_match.group(1).strip()
+                matiere_clean = re.split(r'\\n|<br', matiere_raw)[0].strip()
+                course_info['matiere'] = fix_text_encoding(matiere_clean)
+        
+        if not course_info['type_cours'] and not course_info['is_tutorat']:
+            type_match = re.search(r'Type\s*:\s*(\w+)', description, re.IGNORECASE)
+            if type_match:
+                course_info['type_cours'] = type_match.group(1).upper()
     
     return course_info
 
@@ -527,8 +538,8 @@ def draw_centered_text(draw, text, font, y, x_start, x_end, color):
     draw.text((x, y), text, fill=color, font=font)
     return bbox[3] - bbox[1]
 
-def create_perfect_edt(group_name, week_events, week_dates):
-    """EDT final parfait avec toutes les corrections"""
+def create_ultimate_edt(group_name, week_events, week_dates):
+    """EDT final ultime avec toutes les corrections"""
     
     WIDTH = 1600
     HEIGHT = 1100
@@ -620,7 +631,7 @@ def create_perfect_edt(group_name, week_events, week_dates):
             if event_height < 10:
                 continue
             
-            # COULEUR PAR MATIÈRE (cohérente)
+            # COULEUR PAR MATIÈRE
             matiere = event['course_info']['matiere'] or 'Défaut'
             main_color = get_subject_color(matiere)
             
@@ -654,7 +665,7 @@ def create_perfect_edt(group_name, week_events, week_dates):
             # CONTENU
             x_start = x_day + padding + band_width + 8
             x_end = x_day + DAY_WIDTH - padding - 8
-            current_y = y_event_start + 10  # Moins de padding en haut
+            current_y = y_event_start + 10
             
             available_height = event_height - 20
             max_text_width = x_end - x_start
@@ -684,12 +695,12 @@ def create_perfect_edt(group_name, week_events, week_dates):
             current_y += h + spacing
             
             # 2. MATIÈRE - TYPE
-            matiere_display = matiere[:30]  # Un peu plus long
+            matiere_display = matiere[:30]
             type_display = f" - {course_type}" if course_type and course_type != 'default' else ""
             matiere_text = f"{matiere_display}{type_display}"
             
             lines = wrap_text(matiere_text, font_matiere, max_text_width, draw)
-            for line in lines[:2]:  # Max 2 lignes
+            for line in lines[:2]:
                 if current_y < y_event_end - 35:
                     h = draw_centered_text(draw, line, font_matiere, current_y, x_start, x_end, COLORS['text_bright'])
                     current_y += h + 5
@@ -701,10 +712,13 @@ def create_perfect_edt(group_name, week_events, week_dates):
                 h = draw_centered_text(draw, location_short, font_info, current_y, x_start, x_end, COLORS['text_bright'])
                 current_y += h + 5
             
-            # 4. PROFESSEUR
+            # 4. PROFESSEUR (NETTOYÉ!)
             prof = event['course_info']['professeur']
             if prof and current_y < y_event_end - 15:
-                draw_centered_text(draw, prof, font_info, current_y, x_start, x_end, COLORS['text_bright'])
+                # Sécurité supplémentaire : couper au premier caractère de nouvelle ligne
+                prof_clean = prof.split('\n')[0].split('\\n')[0].strip()
+                if prof_clean:
+                    draw_centered_text(draw, prof_clean, font_info, current_y, x_start, x_end, COLORS['text_bright'])
     
     # ═══ FOOTER ═══
     footer_y = HEIGHT - FOOTER_HEIGHT
@@ -726,7 +740,7 @@ def create_perfect_edt(group_name, week_events, week_dates):
     draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, footer_y + 12),
              stats_text, fill=COLORS['text_bright'], font=fonts['date'])
     
-    # Légende (avec vert pour rattrapage)
+    # Légende
     legend_x = 20
     legend_y = footer_y + 14
     legend_items = [
@@ -734,7 +748,7 @@ def create_perfect_edt(group_name, week_events, week_dates):
         ("TD", TYPE_COLORS['TD']), 
         ("TP", TYPE_COLORS['TP']), 
         ("Tutorat", TYPE_COLORS['Tutorat']),
-        ("Rattrapage", SPECIAL_COLORS['makeup'])  # VERT maintenant
+        ("Rattrapage", SPECIAL_COLORS['makeup'])
     ]
     
     for label, color in legend_items:
@@ -804,7 +818,7 @@ def send_to_discord(group_name, image, week_dates, stats):
         return False
 
 def main():
-    print("🎓 EDT BOT - VERSION FINALE PERFECTIONNÉE")
+    print("🎓 EDT BOT - VERSION FINALE ULTIME")
     start_time = time.time()
     
     week_offset, _ = determine_week_mode()
@@ -818,12 +832,13 @@ def main():
             
             events = fetch_and_parse_edt(group_name, edt_url)
             if not events:
+                logger.warning(f"⚠️ Aucun événement pour {group_name}")
                 continue
             
             week_events = filter_events_for_week(events, week_dates)
             stats = calculate_statistics(week_events)
             
-            image = create_perfect_edt(group_name, week_events, week_dates)
+            image = create_ultimate_edt(group_name, week_events, week_dates)
             
             if send_to_discord(group_name, image, week_dates, stats):
                 success_count += 1
