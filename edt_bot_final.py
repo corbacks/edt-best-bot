@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 """
-🎓 EDT Bot L2 INFO - VERSION FINALE CORRIGÉE
+🎓 EDT Bot L2 INFO - VERSION FINALE PERFECTIONNÉE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Extraction correcte des matières depuis le format:
-"Gr1 - L2 INFO - [MATIÈRE] - [ENSEIGNANT] - [TYPE]"
-
-Layout optimisé:
-1. HORAIRES (énorme, blanc pur, gras)
-2. MATIÈRE - TYPE (gros, gras)
-3. SALLE
-4. PROFESSEUR
-
-Couleur par matière, bande latérale par type.
+Corrections finales:
+- Affichage CM corrigé (problème débordement)
+- Rattrapage = VERT (au lieu d'orange)
+- Couleurs cohérentes par matière spécifique
+- Apostrophe ' au lieu de ? dans "Système d'exploitation"
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 import os
@@ -24,7 +19,6 @@ from collections import defaultdict, Counter
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import logging
-import hashlib
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 🎨 CONFIGURATION VISUELLE
@@ -39,7 +33,7 @@ COLORS = {
     'shadow': (0, 0, 0),
 }
 
-# Couleurs par TYPE de cours (bande latérale)
+# Couleurs TYPE (bande latérale)
 TYPE_COLORS = {
     'CM': (138, 80, 183),      # Violet
     'TD': (230, 145, 56),      # Orange
@@ -51,26 +45,56 @@ TYPE_COLORS = {
     'default': (100, 110, 130) # Gris
 }
 
-# Palette couleurs MATIÈRES
-SUBJECT_COLOR_PALETTE = [
-    (65, 90, 140),      # Bleu foncé
-    (85, 110, 95),      # Vert foncé
-    (120, 70, 100),     # Violet foncé
-    (100, 85, 65),      # Marron
-    (70, 95, 110),      # Bleu-gris
-    (95, 75, 90),       # Prune
-    (80, 100, 85),      # Vert-gris
-    (110, 90, 75),      # Brun
-    (75, 85, 105),      # Bleu ardoise
-    (100, 80, 70),      # Terre cuite
-    (70, 100, 95),      # Turquoise foncé
-    (105, 75, 85),      # Rose foncé
-    (90, 95, 80),       # Olive
-    (80, 70, 95),       # Lavande foncé
-]
+# COULEURS SPÉCIFIQUES PAR MATIÈRE
+SUBJECT_SPECIFIC_COLORS = {
+    # Algorithmique
+    'Algorithmique et programmati': (45, 85, 140),      # Bleu foncé
+    'Algorithmique et programma': (45, 85, 140),
+    'Algorithmique': (45, 85, 140),
+    
+    # Statistiques
+    'Statistique': (180, 140, 40),                       # Jaune/Or
+    'Statistiques': (180, 140, 40),
+    
+    # Système d\'exploitation (corrigé avec apostrophe)
+    'Système d\'exploitation 1': (60, 120, 75),         # Vert foncé
+    'Système d\'exploitation': (60, 120, 75),
+    'Système d exploitation': (60, 120, 75),             # Au cas où
+    
+    # Anglais
+    'Anglais': (140, 50, 60),                           # Rouge bordeaux
+    
+    # Informatique pour le web
+    'Informatique pour le web': (70, 100, 120),         # Bleu-gris
+    'Informatique pour le w': (70, 100, 120),
+    
+    # Programmation avancée Java
+    'Programmation avancée java': (90, 70, 50),         # Marron
+    'Programmation avancée jav': (90, 70, 50),
+    'Programmation avancée ja': (90, 70, 50),
+    
+    # Bases de données
+    'Base de données': (100, 60, 90),                   # Violet foncé
+    'Bases de données': (100, 60, 90),
+    'BDD': (100, 60, 90),
+    
+    # Réseaux
+    'Réseaux': (50, 90, 100),                           # Cyan foncé
+    'Réseau': (50, 90, 100),
+    
+    # Mathématiques
+    'Mathématiques': (85, 75, 95),                      # Lavande foncé
+    'Maths': (85, 75, 95),
+    
+    # Projet
+    'Projet': (70, 110, 80),                            # Vert moyen
+    
+    # Défaut
+    'default': (75, 85, 95)
+}
 
 SPECIAL_COLORS = {
-    'makeup': (180, 120, 30),
+    'makeup': (60, 130, 75),  # VERT pour rattrapage (changé!)
 }
 
 SPECIAL_EVENTS = {
@@ -112,22 +136,21 @@ ROLE_IDS = {
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
 
-subject_color_cache = {}
-
 def get_subject_color(subject_name):
-    """Couleur cohérente par matière"""
+    """Retourne une couleur cohérente par matière"""
     if not subject_name:
-        return SUBJECT_COLOR_PALETTE[0]
+        return SUBJECT_SPECIFIC_COLORS['default']
     
-    if subject_name in subject_color_cache:
-        return subject_color_cache[subject_name]
+    # Normaliser le nom (enlever espaces multiples, mettre en minuscule)
+    normalized = ' '.join(subject_name.lower().split())
     
-    hash_value = int(hashlib.md5(subject_name.encode()).hexdigest(), 16)
-    color_index = hash_value % len(SUBJECT_COLOR_PALETTE)
-    color = SUBJECT_COLOR_PALETTE[color_index]
+    # Chercher correspondance exacte ou partielle
+    for key, color in SUBJECT_SPECIFIC_COLORS.items():
+        if key.lower() in normalized or normalized.startswith(key.lower()[:15]):
+            return color
     
-    subject_color_cache[subject_name] = color
-    return color
+    # Défaut
+    return SUBJECT_SPECIFIC_COLORS['default']
 
 def get_paris_offset(dt):
     year = dt.year
@@ -240,13 +263,22 @@ def detect_special_event(summary, description=""):
             return label
     return None
 
-def extract_course_info(summary, description=""):
-    """
-    Extraction CORRECTE depuis le format:
-    "Gr1 - L2 INFO - [MATIÈRE] - [ENSEIGNANT] - [TYPE]"
+def fix_text_encoding(text):
+    """Corrige les problèmes d'encodage, notamment ? → '"""
+    if not text:
+        return text
     
-    Exemple: "Gr1 - L2 INFO - Anglais - M. Moors Anthony - TD"
-    """
+    # Remplacer les ? qui devraient être des apostrophes
+    # Contextes courants : d?exploitation, l?info, etc.
+    text = re.sub(r'd\?([a-zA-Z])', r"d'\1", text)
+    text = re.sub(r'l\?([a-zA-Z])', r"l'\1", text)
+    text = re.sub(r'n\?([a-zA-Z])', r"n'\1", text)
+    text = re.sub(r's\?([a-zA-Z])', r"s'\1", text)
+    
+    return text
+
+def extract_course_info(summary, description=""):
+    """Extraction avec correction d'encodage"""
     course_info = {
         'type_cours': '',
         'matiere': '',
@@ -260,7 +292,10 @@ def extract_course_info(summary, description=""):
     if not summary:
         return course_info
     
-    # Détecter événements spéciaux
+    # Corriger l'encodage
+    summary = fix_text_encoding(summary)
+    description = fix_text_encoding(description)
+    
     special = detect_special_event(summary, description)
     course_info['special_event'] = special
     
@@ -271,44 +306,33 @@ def extract_course_info(summary, description=""):
     if special and 'RATTRAPAGE' in special:
         course_info['is_makeup'] = True
     
-    # PARSING SPÉCIFIQUE DU FORMAT
-    # Format: "Gr1 - L2 INFO - [MATIÈRE] - [ENSEIGNANT] - [TYPE]"
+    # Parsing: "Gr1 - L2 INFO - [MATIÈRE] - [ENSEIGNANT] - [TYPE]"
     parts = [p.strip() for p in summary.split(' - ')]
     
     if len(parts) >= 5:
-        # parts[0] = "Gr1" ou "Gr2" ou "Gr3"
-        # parts[1] = "L2 INFO"
-        # parts[2] = MATIÈRE
-        # parts[3] = ENSEIGNANT
-        # parts[4] = TYPE
-        
-        course_info['matiere'] = parts[2]
+        course_info['matiere'] = fix_text_encoding(parts[2])
         course_info['professeur'] = parts[3]
         
         if not course_info['is_tutorat']:
             course_info['type_cours'] = parts[4].upper()
         
-        # Extraire le groupe
         if parts[0].startswith('Gr'):
             course_info['groupe'] = parts[0]
     
     elif len(parts) >= 4:
-        # Format plus court, adapter
-        course_info['matiere'] = parts[2] if len(parts) > 2 else ''
+        course_info['matiere'] = fix_text_encoding(parts[2]) if len(parts) > 2 else ''
         if len(parts) > 3 and not course_info['is_tutorat']:
-            # Le dernier est probablement le type
             last = parts[-1].upper()
             if last in ['CM', 'TD', 'TP', 'EXAMEN', 'PARTIEL', 'PROJET']:
                 course_info['type_cours'] = last
-                # L'avant-dernier est le prof
                 if len(parts) > 3:
                     course_info['professeur'] = parts[-2]
     
-    # Fallback: extraire depuis la DESCRIPTION si disponible
+    # Fallback description
     if description and not course_info['matiere']:
         matiere_match = re.search(r'Matière\s*:\s*(.+)', description, re.IGNORECASE)
         if matiere_match:
-            course_info['matiere'] = matiere_match.group(1).strip()
+            course_info['matiere'] = fix_text_encoding(matiere_match.group(1).strip())
     
     if description and not course_info['professeur']:
         prof_match = re.search(r'Enseignant\s*:\s*(.+)', description, re.IGNORECASE)
@@ -446,13 +470,11 @@ def calculate_statistics(week_events):
 def load_fonts():
     fonts = {}
     try:
-        # Polices ADAPTATIVES selon espace disponible
         fonts['title'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
         fonts['date'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
         fonts['header'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 17)
         fonts['day_num'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
         
-        # Polices événements (on va les adapter dynamiquement)
         fonts['event_time_huge'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
         fonts['event_time_big'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
         fonts['event_time'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
@@ -505,8 +527,8 @@ def draw_centered_text(draw, text, font, y, x_start, x_end, color):
     draw.text((x, y), text, fill=color, font=font)
     return bbox[3] - bbox[1]
 
-def create_final_edt(group_name, week_events, week_dates):
-    """EDT final avec extraction correcte et texte adaptatif"""
+def create_perfect_edt(group_name, week_events, week_dates):
+    """EDT final parfait avec toutes les corrections"""
     
     WIDTH = 1600
     HEIGHT = 1100
@@ -598,7 +620,7 @@ def create_final_edt(group_name, week_events, week_dates):
             if event_height < 10:
                 continue
             
-            # Couleur par MATIÈRE
+            # COULEUR PAR MATIÈRE (cohérente)
             matiere = event['course_info']['matiere'] or 'Défaut'
             main_color = get_subject_color(matiere)
             
@@ -606,6 +628,7 @@ def create_final_edt(group_name, week_events, week_dates):
             course_type = event['course_info']['type_cours'] or 'default'
             side_color = TYPE_COLORS.get(course_type, TYPE_COLORS['default'])
             
+            # Rattrapage = VERT
             if event['course_info']['is_makeup']:
                 main_color = SPECIAL_COLORS['makeup']
             
@@ -628,55 +651,59 @@ def create_final_edt(group_name, week_events, week_dates):
                 fill=side_color
             )
             
-            # CONTENU ADAPTATIF
+            # CONTENU
             x_start = x_day + padding + band_width + 8
             x_end = x_day + DAY_WIDTH - padding - 8
-            current_y = y_event_start + 12
+            current_y = y_event_start + 10  # Moins de padding en haut
             
-            available_height = event_height - 24
+            available_height = event_height - 20
+            max_text_width = x_end - x_start
             
-            # Choisir la taille des polices selon l'espace
+            # Adapter polices
             if available_height > 120:
                 font_time = fonts['event_time_huge']
                 font_matiere = fonts['event_matiere_huge']
                 font_info = fonts['event_info_big']
+                spacing = 10
             elif available_height > 90:
                 font_time = fonts['event_time_big']
                 font_matiere = fonts['event_matiere_big']
                 font_info = fonts['event_info']
+                spacing = 8
             else:
                 font_time = fonts['event_time']
                 font_matiere = fonts['event_matiere']
                 font_info = fonts['event_info_small']
+                spacing = 6
             
             # 1. HORAIRES
             start_time = event['start'].strftime('%H:%M')
             end_time = event['end'].strftime('%H:%M')
             time_text = f"{start_time} - {end_time}"
             h = draw_centered_text(draw, time_text, font_time, current_y, x_start, x_end, (255, 255, 255))
-            current_y += h + 10
+            current_y += h + spacing
             
             # 2. MATIÈRE - TYPE
-            matiere_display = matiere[:28]
+            matiere_display = matiere[:30]  # Un peu plus long
             type_display = f" - {course_type}" if course_type and course_type != 'default' else ""
             matiere_text = f"{matiere_display}{type_display}"
             
-            lines = wrap_text(matiere_text, font_matiere, (x_end - x_start), draw)
-            for line in lines[:2]:
-                if current_y < y_event_end - 40:
+            lines = wrap_text(matiere_text, font_matiere, max_text_width, draw)
+            for line in lines[:2]:  # Max 2 lignes
+                if current_y < y_event_end - 35:
                     h = draw_centered_text(draw, line, font_matiere, current_y, x_start, x_end, COLORS['text_bright'])
-                    current_y += h + 6
+                    current_y += h + 5
             
             # 3. SALLE
             location = event.get('location', '')
-            if location and current_y < y_event_end - 28:
-                location_short = location[:26]
+            if location and current_y < y_event_end - 25:
+                location_short = location[:28]
                 h = draw_centered_text(draw, location_short, font_info, current_y, x_start, x_end, COLORS['text_bright'])
-                current_y += h + 6
+                current_y += h + 5
             
             # 4. PROFESSEUR
             prof = event['course_info']['professeur']
-            if prof and current_y < y_event_end - 16:
+            if prof and current_y < y_event_end - 15:
                 draw_centered_text(draw, prof, font_info, current_y, x_start, x_end, COLORS['text_bright'])
     
     # ═══ FOOTER ═══
@@ -699,7 +726,7 @@ def create_final_edt(group_name, week_events, week_dates):
     draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, footer_y + 12),
              stats_text, fill=COLORS['text_bright'], font=fonts['date'])
     
-    # Légende
+    # Légende (avec vert pour rattrapage)
     legend_x = 20
     legend_y = footer_y + 14
     legend_items = [
@@ -707,7 +734,7 @@ def create_final_edt(group_name, week_events, week_dates):
         ("TD", TYPE_COLORS['TD']), 
         ("TP", TYPE_COLORS['TP']), 
         ("Tutorat", TYPE_COLORS['Tutorat']),
-        ("Rattrapage", SPECIAL_COLORS['makeup'])
+        ("Rattrapage", SPECIAL_COLORS['makeup'])  # VERT maintenant
     ]
     
     for label, color in legend_items:
@@ -777,7 +804,7 @@ def send_to_discord(group_name, image, week_dates, stats):
         return False
 
 def main():
-    print("🎓 EDT BOT - VERSION FINALE CORRIGÉE")
+    print("🎓 EDT BOT - VERSION FINALE PERFECTIONNÉE")
     start_time = time.time()
     
     week_offset, _ = determine_week_mode()
@@ -796,7 +823,7 @@ def main():
             week_events = filter_events_for_week(events, week_dates)
             stats = calculate_statistics(week_events)
             
-            image = create_final_edt(group_name, week_events, week_dates)
+            image = create_perfect_edt(group_name, week_events, week_dates)
             
             if send_to_discord(group_name, image, week_dates, stats):
                 success_count += 1
