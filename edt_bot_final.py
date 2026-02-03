@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-🎓 EDT Bot L2 INFO - Version FINALE Ultra-Lisible
+🎓 EDT Bot L2 INFO - Version FINALE Ultra-Visible
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Optimisé pour une lisibilité maximale avec:
-- Emojis au lieu d'icônes
-- Coins arrondis sur les blocs
-- Informations clés ultra-visibles
-- Message Discord enrichi et propre
-- Détection automatique des événements spéciaux
-- Une seule exécution par semaine (dimanche soir)
+Optimisé pour une visibilité maximale:
+- Texte GROS et centré
+- Header compact
+- Pas d'emojis dans l'image (Discord uniquement)
+- Plage 8h-19h
+- Design épuré et élégant
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 import os
@@ -23,44 +22,41 @@ from io import BytesIO
 import logging
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🎨 CONFIGURATION VISUELLE ULTRA-LISIBLE
+# 🎨 CONFIGURATION VISUELLE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Couleurs fond sombre élégant
 COLORS = {
-    'background': (25, 30, 45),           # Fond principal
-    'header': (30, 38, 58),               # Header
-    'grid': (45, 52, 72),                 # Grille
-    'text': (255, 255, 255),              # Texte blanc
-    'text_secondary': (160, 170, 190),    # Texte secondaire
-    'shadow': (0, 0, 0),                  # Ombres
+    'background': (25, 30, 45),
+    'header': (30, 38, 58),
+    'grid': (45, 52, 72),
+    'text': (255, 255, 255),
+    'text_secondary': (160, 170, 190),
+    'shadow': (0, 0, 0),
 }
 
-# Couleurs par type de cours (comme votre image)
 COURSE_COLORS = {
-    'CM': (138, 80, 183),         # Violet
-    'TD': (230, 145, 56),         # Orange
-    'TP': (52, 152, 219),         # Bleu clair
-    'Examen': (231, 76, 60),      # Rouge
-    'Partiel': (231, 76, 60),     # Rouge
-    'Projet': (46, 204, 113),     # Vert
-    'Seconde Chance': (241, 196, 15),  # Jaune
-    'default': (70, 80, 100)      # Gris foncé
+    'CM': (138, 80, 183),
+    'TD': (230, 145, 56),
+    'TP': (52, 152, 219),
+    'Examen': (231, 76, 60),
+    'Partiel': (231, 76, 60),
+    'Projet': (46, 204, 113),
+    'Seconde Chance': (241, 196, 15),
+    'default': (70, 80, 100)
 }
 
-# Détection d'événements spéciaux
 SPECIAL_EVENTS = {
-    'annulé': '🚫 ANNULÉ',
-    'annule': '🚫 ANNULÉ',
-    'canceled': '🚫 ANNULÉ',
-    'examen': '📝 EXAMEN',
-    'partiel': '📝 PARTIEL',
-    'seconde chance': '🔄 2ND CHANCE',
-    '2nde chance': '🔄 2ND CHANCE',
-    'rattrapage': '🔄 RATTRAPAGE',
-    'soutenance': '🎤 SOUTENANCE',
-    'contrôle': '📝 CONTRÔLE',
-    'controle': '📝 CONTRÔLE',
+    'annulé': 'ANNULE',
+    'annule': 'ANNULE',
+    'canceled': 'ANNULE',
+    'examen': 'EXAMEN',
+    'partiel': 'PARTIEL',
+    'seconde chance': '2ND CHANCE',
+    '2nde chance': '2ND CHANCE',
+    'rattrapage': 'RATTRAPAGE',
+    'soutenance': 'SOUTENANCE',
+    'contrôle': 'CONTROLE',
+    'controle': 'CONTROLE',
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -88,15 +84,7 @@ ROLE_IDS = {
     "Groupe 3": "1419000449016660071"
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 📊 LOGGING
-# ═══════════════════════════════════════════════════════════════════════════════
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s',
-    datefmt='%H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -104,7 +92,6 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_paris_offset(dt):
-    """Calcule l'offset UTC pour Paris"""
     year = dt.year
     march_last = datetime(year, 3, 31)
     while march_last.weekday() != 6:
@@ -119,7 +106,6 @@ def get_paris_offset(dt):
     return 2 if dst_start <= dt < dst_end else 1
 
 def get_paris_now():
-    """Obtient datetime actuel en heure de Paris"""
     utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
     offset = get_paris_offset(utc_now)
     return utc_now + timedelta(hours=offset)
@@ -129,12 +115,9 @@ def get_paris_now():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def fetch_with_retry(url, max_retries=5, initial_timeout=30):
-    """Récupère une URL avec retry robuste"""
     for attempt in range(max_retries):
         try:
             timeout = initial_timeout + (attempt * 15)
-            logger.info(f"🔄 Tentative {attempt + 1}/{max_retries} (timeout: {timeout}s)")
-            
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'text/calendar,*/*',
@@ -155,15 +138,10 @@ def fetch_with_retry(url, max_retries=5, initial_timeout=30):
                 wait_time = 2 ** attempt
                 time.sleep(wait_time)
     
-    logger.error(f"💥 Échec définitif après {max_retries} tentatives")
+    logger.error(f"💥 Échec définitif")
     return None
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 📅 GESTION DES SEMAINES
-# ═══════════════════════════════════════════════════════════════════════════════
-
 def get_week_dates(week_offset=0):
-    """Obtient les dates d'une semaine"""
     now = get_paris_now()
     days_since_monday = now.weekday()
     current_monday = now.date() - timedelta(days=days_since_monday)
@@ -184,23 +162,18 @@ def get_week_dates(week_offset=0):
     return week_dates
 
 def determine_week_mode():
-    """Toujours retourner la semaine SUIVANTE (exécution dimanche uniquement)"""
     week_mode = os.environ.get('WEEK_MODE', 'auto')
-    
     if week_mode == 'current':
         return 0, "courante (forcé)"
     elif week_mode == 'next':
         return 1, "suivante (forcé)"
-    
-    # Par défaut : toujours semaine suivante
     return 1, "suivante (automatique)"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 📝 PARSING DES ÉVÉNEMENTS
+# 📝 PARSING
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def parse_ical_datetime(dt_string):
-    """Parse une datetime iCal"""
     try:
         dt_clean = dt_string.strip()
         if ';' in dt_clean:
@@ -234,17 +207,13 @@ def parse_ical_datetime(dt_string):
     return None
 
 def detect_special_event(summary, description=""):
-    """Détecte les événements spéciaux"""
     text = (summary + " " + description).lower()
-    
     for keyword, label in SPECIAL_EVENTS.items():
         if keyword in text:
             return label
-    
     return None
 
 def extract_course_info(summary, description=""):
-    """Extraction intelligente des informations"""
     course_info = {
         'type_cours': '',
         'matiere': '',
@@ -257,18 +226,13 @@ def extract_course_info(summary, description=""):
     if not summary:
         return course_info
     
-    # Détecter événement spécial
     special = detect_special_event(summary, description)
     course_info['special_event'] = special
     
-    # Détecter annulation
     if 'annulé' in summary.lower() or 'annule' in summary.lower():
         course_info['is_cancelled'] = True
     
-    # Type de cours
-    type_patterns = [
-        (r'\b(CM|TD|TP|Examen|Partiel|Projet|Soutenance)\b', 'type_cours'),
-    ]
+    type_patterns = [(r'\b(CM|TD|TP|Examen|Partiel|Projet|Soutenance)\b', 'type_cours')]
     
     for pattern, field in type_patterns:
         match = re.search(pattern, summary, re.IGNORECASE)
@@ -276,19 +240,15 @@ def extract_course_info(summary, description=""):
             course_info[field] = match.group(1).upper()
             break
     
-    # Matière (tout ce qui est entre tirets ou après le type)
     parts = re.split(r'[-–—]', summary)
     if len(parts) >= 2:
         course_info['matiere'] = parts[1].strip()
     else:
-        # Enlever le type de cours du début
         matiere = re.sub(r'^(CM|TD|TP|Examen|Partiel|Projet)\s*-?\s*', '', summary, flags=re.IGNORECASE)
         course_info['matiere'] = matiere.strip()
     
-    # Nettoyage
     course_info['matiere'] = re.sub(r'\s*\(.*?\)\s*', '', course_info['matiere'])
     
-    # Professeur
     prof_patterns = [
         r'(?:Prof|Enseignant|Professeur)[:\s]+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)',
         r'\bM\.\s*([A-Z][a-z]+)',
@@ -301,7 +261,6 @@ def extract_course_info(summary, description=""):
             course_info['professeur'] = match.group(1)
             break
     
-    # Groupe
     groupe_match = re.search(r'Gr[ou]*pe?\s*(\d+)', summary, re.IGNORECASE)
     if groupe_match:
         course_info['groupe'] = f"Gr{groupe_match.group(1)}"
@@ -309,7 +268,6 @@ def extract_course_info(summary, description=""):
     return course_info
 
 def fetch_and_parse_edt(group_name, edt_url):
-    """Récupération et parsing de l'EDT"""
     logger.info(f"📡 Récupération EDT {group_name}...")
     
     ical_data = fetch_with_retry(edt_url)
@@ -354,13 +312,11 @@ def fetch_and_parse_edt(group_name, edt_url):
             if line == 'BEGIN:VEVENT':
                 in_event = True
                 current_event = {}
-            
             elif line == 'END:VEVENT' and in_event:
                 if 'start' in current_event and 'end' in current_event:
                     events.append(current_event)
                 in_event = False
                 current_event = {}
-            
             elif in_event and ':' in line:
                 field_name = line.split(':', 1)[0].split(';')[0]
                 field_content = line.split(':', 1)[1] if ':' in line else ''
@@ -369,12 +325,10 @@ def fetch_and_parse_edt(group_name, edt_url):
                     current_field = field_name
                     field_value = [field_content]
         
-        # Enrichir les événements
         for event in events:
             summary = event.get('summary', '')
             description = event.get('description', '')
             event['course_info'] = extract_course_info(summary, description)
-            
             duration = event['end'] - event['start']
             event['duration_hours'] = duration.total_seconds() / 3600
         
@@ -383,12 +337,9 @@ def fetch_and_parse_edt(group_name, edt_url):
     
     except Exception as e:
         logger.error(f"❌ Erreur parsing: {e}")
-        import traceback
-        traceback.print_exc()
         return []
 
 def filter_events_for_week(events, week_dates):
-    """Filtre les événements pour la semaine"""
     week_events = defaultdict(list)
     week_start = week_dates[0]['date']
     week_end = week_dates[-1]['date']
@@ -405,12 +356,7 @@ def filter_events_for_week(events, week_dates):
     
     return dict(week_events)
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 📊 STATISTIQUES
-# ═══════════════════════════════════════════════════════════════════════════════
-
 def calculate_statistics(week_events):
-    """Calcule les statistiques de la semaine"""
     stats = {
         'total_courses': 0,
         'total_hours': 0,
@@ -439,28 +385,28 @@ def calculate_statistics(week_events):
     return stats
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🎨 GÉNÉRATION D'IMAGE ULTRA-LISIBLE
+# 🎨 GÉNÉRATION IMAGE ULTRA-VISIBLE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def load_fonts():
-    """Charge les polices"""
     fonts = {}
     try:
-        fonts['title'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
-        fonts['subtitle'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
-        fonts['header'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
-        fonts['day_num'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-        fonts['event_time'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
-        fonts['event_title'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 12)
-        fonts['event_info'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
-        fonts['small'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 9)
+        # Polices PLUS GRANDES
+        fonts['title'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        fonts['subtitle'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+        fonts['header'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)
+        fonts['day_num'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+        fonts['event_time'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16)  # Plus gros
+        fonts['event_matiere'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)  # Plus gros
+        fonts['event_info'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 13)  # Plus gros
+        fonts['small'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
+        fonts['hour'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
     except:
-        fonts = {k: ImageFont.load_default() for k in ['title', 'subtitle', 'header', 'day_num', 'event_time', 'event_title', 'event_info', 'small']}
+        fonts = {k: ImageFont.load_default() for k in ['title', 'subtitle', 'header', 'day_num', 'event_time', 'event_matiere', 'event_info', 'small', 'hour']}
     
     return fonts
 
 def wrap_text(text, font, max_width, draw):
-    """Découpe le texte intelligemment"""
     if not text:
         return []
     
@@ -484,21 +430,21 @@ def wrap_text(text, font, max_width, draw):
     
     return lines
 
-def create_ultra_readable_edt(group_name, week_events, week_dates):
-    """Crée l'EDT ultra-lisible avec coins arrondis"""
+def create_ultra_visible_edt(group_name, week_events, week_dates):
+    """Crée l'EDT ultra-visible avec texte GROS et centré"""
     
     # Dimensions
     WIDTH = 1600
     HEIGHT = 1100
-    HEADER_HEIGHT = 90
+    HEADER_HEIGHT = 70  # Réduit de 90 à 70
     DAY_HEADER_HEIGHT = 70
     TIME_COL_WIDTH = 70
     FOOTER_HEIGHT = 40
     DAY_WIDTH = (WIDTH - TIME_COL_WIDTH) // 5
     
-    # Heures
-    START_HOUR = 7
-    END_HOUR = 20
+    # Heures 8h-19h
+    START_HOUR = 8
+    END_HOUR = 19
     HOURS = END_HOUR - START_HOUR
     CONTENT_HEIGHT = HEIGHT - HEADER_HEIGHT - DAY_HEADER_HEIGHT - FOOTER_HEIGHT
     HOUR_HEIGHT = CONTENT_HEIGHT / HOURS
@@ -508,23 +454,21 @@ def create_ultra_readable_edt(group_name, week_events, week_dates):
     draw = ImageDraw.Draw(img, 'RGBA')
     fonts = load_fonts()
     
-    # ═══ HEADER ═══
+    # ═══ HEADER COMPACT ═══
     draw.rectangle([0, 0, WIDTH, HEADER_HEIGHT], fill=COLORS['header'])
     
-    # Titre avec emoji groupe
     group_emojis = {"Groupe 1": "📘", "Groupe 2": "📕", "Groupe 3": "📗", "CM Communs": "📚"}
     emoji = group_emojis.get(group_name, "📅")
     
-    title = f"{emoji} EDT {group_name} - 📅 Cette Semaine"
+    title = f"EDT {group_name} - Cette Semaine"
     bbox = draw.textbbox((0, 0), title, font=fonts['title'])
-    draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, 20), title, fill=COLORS['text'], font=fonts['title'])
+    draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, 12), title, fill=COLORS['text'], font=fonts['title'])
     
-    # Dates
     monday = week_dates[0]['formatted']
     friday = week_dates[4]['formatted']
     subtitle = f"Du {monday} au {friday}"
     bbox = draw.textbbox((0, 0), subtitle, font=fonts['subtitle'])
-    draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, 55), subtitle, fill=COLORS['text_secondary'], font=fonts['subtitle'])
+    draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, 42), subtitle, fill=COLORS['text_secondary'], font=fonts['subtitle'])
     
     # ═══ HEADERS DES JOURS ═══
     y_day_header = HEADER_HEIGHT
@@ -538,37 +482,33 @@ def create_ultra_readable_edt(group_name, week_events, week_dates):
         day_name = week_dates[i]['day_name']
         day_number = week_dates[i]['day_number']
         
-        # Nom du jour
         bbox = draw.textbbox((0, 0), day_name, font=fonts['header'])
-        draw.text((x + (DAY_WIDTH - (bbox[2] - bbox[0])) // 2, y_day_header + 12),
+        draw.text((x + (DAY_WIDTH - (bbox[2] - bbox[0])) // 2, y_day_header + 10),
                  day_name, fill=COLORS['text'], font=fonts['header'])
         
-        # Numéro du jour (gros)
         num_text = str(day_number)
         bbox = draw.textbbox((0, 0), num_text, font=fonts['day_num'])
-        draw.text((x + (DAY_WIDTH - (bbox[2] - bbox[0])) // 2, y_day_header + 35),
+        draw.text((x + (DAY_WIDTH - (bbox[2] - bbox[0])) // 2, y_day_header + 32),
                  num_text, fill=COLORS['text'], font=fonts['day_num'])
     
     # ═══ GRILLE ═══
     y_start = HEADER_HEIGHT + DAY_HEADER_HEIGHT
     
-    # Lignes heures
     for hour in range(START_HOUR, END_HOUR + 1):
         y = y_start + ((hour - START_HOUR) * HOUR_HEIGHT)
         
         hour_text = f"{hour:02d}:00"
-        bbox = draw.textbbox((0, 0), hour_text, font=fonts['small'])
+        bbox = draw.textbbox((0, 0), hour_text, font=fonts['hour'])
         draw.text(((TIME_COL_WIDTH - (bbox[2] - bbox[0])) // 2, y - 6),
-                 hour_text, fill=COLORS['text_secondary'], font=fonts['small'])
+                 hour_text, fill=COLORS['text_secondary'], font=fonts['hour'])
         
         draw.line([(TIME_COL_WIDTH, y), (WIDTH, y)], fill=COLORS['grid'], width=1)
     
-    # Lignes verticales
     for i in range(6):
         x = TIME_COL_WIDTH + (i * DAY_WIDTH)
         draw.line([(x, y_day_header), (x, HEIGHT - FOOTER_HEIGHT)], fill=COLORS['grid'], width=1)
     
-    # ═══ ÉVÉNEMENTS AVEC COINS ARRONDIS ═══
+    # ═══ ÉVÉNEMENTS ULTRA-VISIBLES ═══
     for day_index, events in week_events.items():
         if day_index >= 5:
             continue
@@ -589,11 +529,10 @@ def create_ultra_readable_edt(group_name, week_events, week_dates):
             if event_height < 10:
                 continue
             
-            # Couleur selon type
             course_type = event['course_info']['type_cours'] or 'default'
             color = COURSE_COLORS.get(course_type, COURSE_COLORS['default'])
             
-            # Rectangle arrondi avec radius=10 comme votre image
+            # Rectangle arrondi
             padding = 3
             draw.rounded_rectangle(
                 [x_day + padding, y_event_start + padding, 
@@ -603,56 +542,20 @@ def create_ultra_readable_edt(group_name, week_events, week_dates):
                 outline=color
             )
             
-            # Contenu ultra-lisible
-            text_x = x_day + 12
-            text_y = y_event_start + 8
-            max_width = DAY_WIDTH - 24
+            # Contenu CENTRÉ et GROS
+            center_x = x_day + (DAY_WIDTH // 2)
+            text_y = y_event_start + 10
+            max_width = DAY_WIDTH - 20
             
-            # 🕐 Horaires en gras
-            start_time = event['start'].strftime('%H:%M')
-            end_time = event['end'].strftime('%H:%M')
-            time_text = f"🕐 {start_time} - {end_time}"
-            draw.text((text_x, text_y), time_text, fill=COLORS['text'], font=fonts['event_time'])
-            text_y += 18
-            
-            # 📚 Matière en gras
-            matiere = event['course_info']['matiere']
-            if matiere:
-                matiere_short = matiere[:35]
-                type_suffix = f" - {course_type}" if course_type != 'default' else ""
-                matiere_text = f"📚 {matiere_short}{type_suffix}"
-                
-                lines = wrap_text(matiere_text, fonts['event_title'], max_width, draw)
-                for line in lines[:2]:
-                    if text_y < y_event_end - 30:
-                        draw.text((text_x, text_y), line, fill=COLORS['text'], font=fonts['event_title'])
-                        text_y += 14
-            
-            # 📍 Salle
-            location = event.get('location', '')
-            if location and text_y < y_event_end - 25:
-                location_short = location[:30]
-                draw.text((text_x, text_y), f"📍 {location_short}", 
-                         fill=COLORS['text'], font=fonts['event_info'])
-                text_y += 13
-            
-            # 👨‍🏫 Prof
-            prof = event['course_info']['professeur']
-            if prof and text_y < y_event_end - 15:
-                draw.text((text_x, text_y), f"👨‍🏫 {prof}", 
-                         fill=COLORS['text'], font=fonts['event_info'])
-                text_y += 13
-            
-            # Badge événement spécial en haut à droite
+            # Badge événement spécial en haut
             if event['course_info']['special_event']:
                 special_text = event['course_info']['special_event']
                 bbox = draw.textbbox((0, 0), special_text, font=fonts['small'])
                 badge_width = (bbox[2] - bbox[0]) + 12
-                badge_x = x_day + DAY_WIDTH - badge_width - 8
-                badge_y = y_event_start + 8
+                badge_x = center_x - (badge_width // 2)
+                badge_y = y_event_start + 6
                 
-                # Badge rouge/jaune selon le type
-                badge_color = (231, 76, 60) if 'ANNULÉ' in special_text or 'EXAMEN' in special_text else (241, 196, 15)
+                badge_color = (231, 76, 60) if 'ANNULE' in special_text or 'EXAMEN' in special_text else (241, 196, 15)
                 
                 draw.rounded_rectangle(
                     [badge_x, badge_y, badge_x + badge_width, badge_y + 18],
@@ -661,22 +564,66 @@ def create_ultra_readable_edt(group_name, week_events, week_dates):
                 )
                 draw.text((badge_x + 6, badge_y + 3), special_text, 
                          fill=COLORS['text'], font=fonts['small'])
+                text_y += 26
+            
+            # Horaires CENTRÉS ET GROS
+            start_time = event['start'].strftime('%H:%M')
+            end_time = event['end'].strftime('%H:%M')
+            time_text = f"{start_time} - {end_time}"
+            bbox = draw.textbbox((0, 0), time_text, font=fonts['event_time'])
+            text_width = bbox[2] - bbox[0]
+            draw.text((center_x - text_width // 2, text_y), time_text, 
+                     fill=COLORS['text'], font=fonts['event_time'])
+            text_y += 22
+            
+            # Matière CENTRÉE ET GROSSE
+            matiere = event['course_info']['matiere']
+            if matiere and text_y < y_event_end - 40:
+                matiere_short = matiere[:35]
+                type_suffix = f" - {course_type}" if course_type != 'default' else ""
+                matiere_text = f"{matiere_short}{type_suffix}"
+                
+                lines = wrap_text(matiere_text, fonts['event_matiere'], max_width, draw)
+                for line in lines[:2]:
+                    if text_y < y_event_end - 30:
+                        bbox = draw.textbbox((0, 0), line, font=fonts['event_matiere'])
+                        line_width = bbox[2] - bbox[0]
+                        draw.text((center_x - line_width // 2, text_y), line, 
+                                 fill=COLORS['text'], font=fonts['event_matiere'])
+                        text_y += 18
+            
+            # Salle CENTRÉE
+            location = event.get('location', '')
+            if location and text_y < y_event_end - 25:
+                location_short = location[:30]
+                bbox = draw.textbbox((0, 0), location_short, font=fonts['event_info'])
+                loc_width = bbox[2] - bbox[0]
+                draw.text((center_x - loc_width // 2, text_y), location_short, 
+                         fill=COLORS['text'], font=fonts['event_info'])
+                text_y += 16
+            
+            # Prof CENTRÉ
+            prof = event['course_info']['professeur']
+            if prof and text_y < y_event_end - 15:
+                bbox = draw.textbbox((0, 0), prof, font=fonts['event_info'])
+                prof_width = bbox[2] - bbox[0]
+                draw.text((center_x - prof_width // 2, text_y), prof, 
+                         fill=COLORS['text'], font=fonts['event_info'])
     
     # ═══ FOOTER AVEC STATS ═══
     footer_y = HEIGHT - FOOTER_HEIGHT
     draw.rectangle([0, footer_y, WIDTH, HEIGHT], fill=COLORS['header'])
     
-    # Calculer stats
     stats = calculate_statistics(week_events)
     
-    total_text = f"📊 {stats['total_courses']} cours"
-    hours_text = f"⏱️ {stats['total_hours']:.1f}h"
-    avg_text = f"📈 {stats['total_courses']/5:.1f} cours/jour"
+    total_text = f"{stats['total_courses']} cours"
+    hours_text = f"{stats['total_hours']:.1f}h"
+    avg_text = f"{stats['total_courses']/5:.1f} cours/jour"
     
     stats_parts = [total_text, hours_text, avg_text]
     
     if stats['cancelled_count'] > 0:
-        stats_parts.append(f"🚫 {stats['cancelled_count']} annulé(s)")
+        stats_parts.append(f"{stats['cancelled_count']} annule(s)")
     
     stats_text = "  •  ".join(stats_parts)
     
@@ -684,29 +631,26 @@ def create_ultra_readable_edt(group_name, week_events, week_dates):
     draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, footer_y + 12),
              stats_text, fill=COLORS['text_secondary'], font=fonts['subtitle'])
     
-    # Légende
+    # Légende simple
     legend_x = 20
     legend_y = footer_y + 12
-    legend_items = [("📚 CM", COURSE_COLORS['CM']), ("✏️ TD", COURSE_COLORS['TD']), 
-                   ("💻 TP", COURSE_COLORS['TP']), ("📝 Examen", COURSE_COLORS['Examen'])]
+    legend_items = [("CM", COURSE_COLORS['CM']), ("TD", COURSE_COLORS['TD']), 
+                   ("TP", COURSE_COLORS['TP']), ("Examen", COURSE_COLORS['Examen'])]
     
     for label, color in legend_items:
-        # Petit carré de couleur
         draw.rounded_rectangle([legend_x, legend_y, legend_x + 12, legend_y + 12], 
                               radius=3, fill=color)
         draw.text((legend_x + 16, legend_y), label, fill=COLORS['text_secondary'], font=fonts['small'])
-        legend_x += 80
+        legend_x += 75
     
     logger.info(f"✅ Image générée: {WIDTH}x{HEIGHT}px")
     return img
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 📤 ENVOI DISCORD AVEC MESSAGE ENRICHI
+# 📤 ENVOI DISCORD
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def send_to_discord(group_name, image, week_dates, stats):
-    """Envoie sur Discord avec message propre et enrichi"""
-    
     webhook_url = WEBHOOKS.get(group_name)
     if not webhook_url:
         logger.error(f"❌ Pas de webhook pour {group_name}")
@@ -716,12 +660,10 @@ def send_to_discord(group_name, image, week_dates, stats):
     mention = f"<@&{role_id}>" if role_id else ""
     
     try:
-        # Image
         img_byte_arr = BytesIO()
         image.save(img_byte_arr, format='PNG', optimize=True, quality=95)
         img_byte_arr.seek(0)
         
-        # Message ultra-propre
         monday = week_dates[0]['formatted']
         friday = week_dates[4]['formatted']
         
@@ -733,11 +675,9 @@ def send_to_discord(group_name, image, week_dates, stats):
             "",
         ]
         
-        # Stats importantes
         if stats['total_courses'] > 0:
             message_lines.append(f"📊 **{stats['total_courses']} cours** cette semaine ({stats['total_hours']:.1f}h de cours)")
             
-            # Répartition
             if stats['by_type']:
                 types_emojis = {'CM': '📚', 'TD': '✏️', 'TP': '💻', 'Examen': '📝', 'Projet': '🎯'}
                 type_details = []
@@ -747,7 +687,6 @@ def send_to_discord(group_name, image, week_dates, stats):
                 
                 message_lines.append("🎯 " + " • ".join(type_details))
             
-            # Événements spéciaux
             if stats['cancelled_count'] > 0:
                 message_lines.append(f"")
                 message_lines.append(f"⚠️ **{stats['cancelled_count']} cours annulé(s)** cette semaine")
@@ -758,7 +697,6 @@ def send_to_discord(group_name, image, week_dates, stats):
                     if 'EXAMEN' in event or 'PARTIEL' in event:
                         message_lines.append(f"")
                         message_lines.append(f"🔴 **Attention: {event}**")
-        
         else:
             message_lines.append("🎉 **Aucun cours cette semaine !**")
             message_lines.append("Profitez bien de votre repos ! 😎")
@@ -768,7 +706,6 @@ def send_to_discord(group_name, image, week_dates, stats):
         
         content = "\n".join(message_lines)
         
-        # Envoi
         files = {'file': ('edt.png', img_byte_arr, 'image/png')}
         
         group_emojis = {"Groupe 1": "📘", "Groupe 2": "📕", "Groupe 3": "📗", "CM Communs": "📚"}
@@ -788,8 +725,6 @@ def send_to_discord(group_name, image, week_dates, stats):
         
     except Exception as e:
         logger.error(f"❌ Erreur envoi {group_name}: {e}")
-        import traceback
-        traceback.print_exc()
         return False
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -797,10 +732,8 @@ def send_to_discord(group_name, image, week_dates, stats):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    """Orchestration principale"""
-    
     print("=" * 80)
-    print("🎓 EDT BOT L2 INFO - VERSION FINALE ULTRA-LISIBLE".center(80))
+    print("🎓 EDT BOT L2 INFO - VERSION ULTRA-VISIBLE".center(80))
     print("=" * 80)
     
     start_time = time.time()
@@ -808,7 +741,6 @@ def main():
     now = get_paris_now()
     logger.info(f"🕐 Heure: {now.strftime('%d/%m/%Y %H:%M:%S')}")
     
-    # Toujours semaine suivante
     week_offset, week_reason = determine_week_mode()
     logger.info(f"📆 Mode: {week_reason}")
     
@@ -828,23 +760,19 @@ def main():
                 logger.warning(f"⚠️ Pas de webhook")
                 continue
             
-            # Récupération
             events = fetch_and_parse_edt(group_name, edt_url)
             if not events:
                 logger.warning(f"⚠️ Aucun événement")
                 continue
             
-            # Filtrage
             week_events = filter_events_for_week(events, week_dates)
             stats = calculate_statistics(week_events)
             
             logger.info(f"📊 {stats['total_courses']} cours, {stats['total_hours']:.1f}h")
             
-            # Génération
             logger.info(f"🎨 Génération image...")
-            image = create_ultra_readable_edt(group_name, week_events, week_dates)
+            image = create_ultra_visible_edt(group_name, week_events, week_dates)
             
-            # Envoi
             if send_to_discord(group_name, image, week_dates, stats):
                 success_count += 1
             
