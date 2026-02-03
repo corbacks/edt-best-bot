@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-🎓 EDT Bot L2 INFO - VERSION ULTRA-VISIBLE FINALE
+🎓 EDT Bot L2 INFO - VERSION FINALE OPTIMALE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Optimisations maximales:
-- TEXTE ÉNORME et PARFAITEMENT CENTRÉ
-- Codes couleur: Normal / Annulé / Rattrapage
-- Date ultra-visible dans le header
-- Contraste maximal (blanc pur, pas de gris)
-- Séparation visuelle entre chaque info
+Système de couleurs optimisé:
+- Couleur principale = MATIÈRE (cohérente par matière)
+- Bande latérale colorée = TYPE (CM/TD/TP)
+- Layout: Horaire → Matière - Type → Salle → Prof
+- Horaires en blanc pur et gras pour visibilité max
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 import os
@@ -20,41 +19,58 @@ from collections import defaultdict, Counter
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import logging
+import hashlib
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 🎨 CONFIGURATION VISUELLE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 COLORS = {
-    'background': (20, 25, 38),           # Fond très sombre
-    'header': (28, 35, 50),               # Header sombre
-    'grid': (50, 58, 75),                 # Grille visible
-    'text': (255, 255, 255),              # Blanc pur (pas de gris!)
-    'text_bright': (255, 255, 255),       # Blanc éclatant
+    'background': (20, 25, 38),
+    'header': (28, 35, 50),
+    'grid': (50, 58, 75),
+    'text': (255, 255, 255),
+    'text_bright': (255, 255, 255),
     'shadow': (0, 0, 0),
 }
 
-# Couleurs par type de cours
-COURSE_COLORS = {
-    'CM': (138, 80, 183),                 # Violet
-    'TD': (230, 145, 56),                 # Orange
-    'TP': (52, 152, 219),                 # Bleu
-    'Examen': (231, 76, 60),              # Rouge
-    'Partiel': (231, 76, 60),             # Rouge
-    'Projet': (46, 204, 113),             # Vert
-    'default': (70, 80, 100),             # Gris foncé
+# Couleurs par TYPE de cours (pour la bande latérale)
+TYPE_COLORS = {
+    'CM': (138, 80, 183),      # Violet
+    'TD': (230, 145, 56),      # Orange
+    'TP': (52, 152, 219),      # Bleu clair
+    'Examen': (231, 76, 60),   # Rouge
+    'Partiel': (231, 76, 60),  # Rouge
+    'Projet': (46, 204, 113),  # Vert
+    'Tutorat': (241, 196, 15), # Jaune (remplace annulé)
+    'default': (100, 110, 130) # Gris
 }
 
-# Couleurs spéciales
+# Palette de couleurs pour les MATIÈRES (cohérentes)
+SUBJECT_COLOR_PALETTE = [
+    (65, 90, 140),      # Bleu foncé
+    (85, 110, 95),      # Vert foncé
+    (120, 70, 100),     # Violet foncé
+    (100, 85, 65),      # Marron
+    (70, 95, 110),      # Bleu-gris
+    (95, 75, 90),       # Prune
+    (80, 100, 85),      # Vert-gris
+    (110, 90, 75),      # Brun
+    (75, 85, 105),      # Bleu ardoise
+    (100, 80, 70),      # Terre cuite
+    (70, 100, 95),      # Turquoise foncé
+    (105, 75, 85),      # Rose foncé
+]
+
 SPECIAL_COLORS = {
-    'cancelled': (120, 40, 40),           # Rouge sombre pour annulé
-    'makeup': (180, 120, 30),             # Orange doré pour rattrapage
+    'makeup': (180, 120, 30),  # Orange doré pour rattrapage
 }
 
 SPECIAL_EVENTS = {
-    'annulé': 'ANNULE',
-    'annule': 'ANNULE',
-    'canceled': 'ANNULE',
+    'annulé': 'TUTORAT',
+    'annule': 'TUTORAT',
+    'canceled': 'TUTORAT',
+    'tutorat': 'TUTORAT',
     'examen': 'EXAMEN',
     'partiel': 'PARTIEL',
     'seconde chance': 'RATTRAPAGE',
@@ -92,6 +108,25 @@ ROLE_IDS = {
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
+
+# Cache des couleurs par matière
+subject_color_cache = {}
+
+def get_subject_color(subject_name):
+    """Retourne une couleur cohérente pour chaque matière"""
+    if not subject_name:
+        return SUBJECT_COLOR_PALETTE[0]
+    
+    if subject_name in subject_color_cache:
+        return subject_color_cache[subject_name]
+    
+    # Générer un hash cohérent basé sur le nom de la matière
+    hash_value = int(hashlib.md5(subject_name.encode()).hexdigest(), 16)
+    color_index = hash_value % len(SUBJECT_COLOR_PALETTE)
+    color = SUBJECT_COLOR_PALETTE[color_index]
+    
+    subject_color_cache[subject_name] = color
+    return color
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ⏰ GESTION DU TEMPS
@@ -223,7 +258,7 @@ def extract_course_info(summary, description=""):
         'professeur': '',
         'groupe': '',
         'special_event': None,
-        'is_cancelled': False,
+        'is_tutorat': False,
         'is_makeup': False
     }
     
@@ -233,37 +268,39 @@ def extract_course_info(summary, description=""):
     special = detect_special_event(summary, description)
     course_info['special_event'] = special
     
-    if 'annulé' in summary.lower() or 'annule' in summary.lower():
-        course_info['is_cancelled'] = True
+    if 'annulé' in summary.lower() or 'annule' in summary.lower() or 'tutorat' in summary.lower():
+        course_info['is_tutorat'] = True
+        course_info['type_cours'] = 'Tutorat'
     
     if special and 'RATTRAPAGE' in special:
         course_info['is_makeup'] = True
     
-    type_patterns = [(r'\b(CM|TD|TP|Examen|Partiel|Projet|Soutenance)\b', 'type_cours')]
-    
-    for pattern, field in type_patterns:
-        match = re.search(pattern, summary, re.IGNORECASE)
-        if match:
-            course_info[field] = match.group(1).upper()
-            break
+    if not course_info['is_tutorat']:
+        type_patterns = [(r'\b(CM|TD|TP|Examen|Partiel|Projet|Soutenance)\b', 'type_cours')]
+        
+        for pattern, field in type_patterns:
+            match = re.search(pattern, summary, re.IGNORECASE)
+            if match:
+                course_info[field] = match.group(1).upper()
+                break
     
     parts = re.split(r'[-–—]', summary)
     if len(parts) >= 2:
         course_info['matiere'] = parts[1].strip()
     else:
-        matiere = re.sub(r'^(CM|TD|TP|Examen|Partiel|Projet)\s*-?\s*', '', summary, flags=re.IGNORECASE)
+        matiere = re.sub(r'^(CM|TD|TP|Examen|Partiel|Projet|Tutorat)\s*-?\s*', '', summary, flags=re.IGNORECASE)
         course_info['matiere'] = matiere.strip()
     
     course_info['matiere'] = re.sub(r'\s*\(.*?\)\s*', '', course_info['matiere'])
     
     prof_patterns = [
         r'(?:Prof|Enseignant|Professeur)[:\s]+([A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s+[A-ZÀ-Ÿ][a-zà-ÿ]+)*)',
-        r'\bM\.\s*([A-Z][a-z]+)',
-        r'\bMme\s*([A-Z][a-z]+)',
+        r'\bM\.\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
+        r'\bMme\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
     ]
     
     for pattern in prof_patterns:
-        match = re.search(pattern, description, re.IGNORECASE | re.MULTILINE)
+        match = re.search(pattern, description + " " + summary, re.IGNORECASE | re.MULTILINE)
         if match:
             course_info['professeur'] = match.group(1)
             break
@@ -368,7 +405,7 @@ def calculate_statistics(week_events):
         'total_courses': 0,
         'total_hours': 0,
         'by_type': Counter(),
-        'cancelled_count': 0,
+        'tutorat_count': 0,
         'makeup_count': 0,
         'special_events': [],
     }
@@ -384,8 +421,8 @@ def calculate_statistics(week_events):
         course_type = event['course_info']['type_cours'] or 'Autre'
         stats['by_type'][course_type] += 1
         
-        if event['course_info']['is_cancelled']:
-            stats['cancelled_count'] += 1
+        if event['course_info']['is_tutorat']:
+            stats['tutorat_count'] += 1
         
         if event['course_info']['is_makeup']:
             stats['makeup_count'] += 1
@@ -396,20 +433,19 @@ def calculate_statistics(week_events):
     return stats
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🎨 GÉNÉRATION IMAGE MAXIMUM VISIBILITÉ
+# 🎨 GÉNÉRATION IMAGE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def load_fonts():
     fonts = {}
     try:
-        # Polices ÉNORMES
         fonts['title'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
-        fonts['date'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)  # Date grosse
+        fonts['date'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
         fonts['header'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 17)
         fonts['day_num'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
-        fonts['event_time'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 19)  # ÉNORME
-        fonts['event_matiere'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 17)  # ÉNORME
-        fonts['event_info'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)  # ÉNORME
+        fonts['event_time'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)  # ÉNORME et GRAS
+        fonts['event_matiere'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 17)
+        fonts['event_info'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
         fonts['small'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
         fonts['hour'] = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
     except:
@@ -442,53 +478,49 @@ def wrap_text(text, font, max_width, draw):
     return lines
 
 def draw_centered_text(draw, text, font, y, x_start, x_end, color):
-    """Dessine du texte parfaitement centré horizontalement"""
+    """Dessine du texte parfaitement centré"""
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     center_x = (x_start + x_end) // 2
     x = center_x - (text_width // 2)
     draw.text((x, y), text, fill=color, font=font)
-    return bbox[3] - bbox[1]  # Retourne la hauteur du texte
+    return bbox[3] - bbox[1]
 
-def create_maximum_visibility_edt(group_name, week_events, week_dates):
-    """Crée l'EDT avec visibilité MAXIMALE"""
+def create_optimal_edt(group_name, week_events, week_dates):
+    """Crée l'EDT avec couleurs par matière et bande latérale par type"""
     
-    # Dimensions
     WIDTH = 1600
     HEIGHT = 1100
     HEADER_HEIGHT = 70
     DAY_HEADER_HEIGHT = 70
     TIME_COL_WIDTH = 70
-    FOOTER_HEIGHT = 40
+    FOOTER_HEIGHT = 45
     DAY_WIDTH = (WIDTH - TIME_COL_WIDTH) // 5
     
-    # Heures 8h-19h
     START_HOUR = 8
     END_HOUR = 19
     HOURS = END_HOUR - START_HOUR
     CONTENT_HEIGHT = HEIGHT - HEADER_HEIGHT - DAY_HEADER_HEIGHT - FOOTER_HEIGHT
     HOUR_HEIGHT = CONTENT_HEIGHT / HOURS
     
-    # Image
     img = Image.new('RGB', (WIDTH, HEIGHT), COLORS['background'])
     draw = ImageDraw.Draw(img, 'RGBA')
     fonts = load_fonts()
     
-    # ═══ HEADER AVEC DATE ULTRA-VISIBLE ═══
+    # ═══ HEADER ═══
     draw.rectangle([0, 0, WIDTH, HEADER_HEIGHT], fill=COLORS['header'])
     
     title = f"EDT {group_name} - Cette Semaine"
     bbox = draw.textbbox((0, 0), title, font=fonts['title'])
     draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, 8), title, fill=COLORS['text_bright'], font=fonts['title'])
     
-    # Date GROSSE et VISIBLE (blanc pur)
     monday = week_dates[0]['formatted']
     friday = week_dates[4]['formatted']
     date_text = f"Du {monday} au {friday}"
     bbox = draw.textbbox((0, 0), date_text, font=fonts['date'])
     draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, 40), date_text, fill=COLORS['text_bright'], font=fonts['date'])
     
-    # ═══ HEADERS DES JOURS ═══
+    # ═══ HEADERS JOURS ═══
     y_day_header = HEADER_HEIGHT
     
     for i in range(5):
@@ -500,12 +532,10 @@ def create_maximum_visibility_edt(group_name, week_events, week_dates):
         day_name = week_dates[i]['day_name']
         day_number = week_dates[i]['day_number']
         
-        # Centrer le nom du jour
         bbox = draw.textbbox((0, 0), day_name, font=fonts['header'])
         draw.text((x + (DAY_WIDTH - (bbox[2] - bbox[0])) // 2, y_day_header + 8),
                  day_name, fill=COLORS['text_bright'], font=fonts['header'])
         
-        # Centrer le numéro
         num_text = str(day_number)
         bbox = draw.textbbox((0, 0), num_text, font=fonts['day_num'])
         draw.text((x + (DAY_WIDTH - (bbox[2] - bbox[0])) // 2, y_day_header + 32),
@@ -528,7 +558,7 @@ def create_maximum_visibility_edt(group_name, week_events, week_dates):
         x = TIME_COL_WIDTH + (i * DAY_WIDTH)
         draw.line([(x, y_day_header), (x, HEIGHT - FOOTER_HEIGHT)], fill=COLORS['grid'], width=2)
     
-    # ═══ ÉVÉNEMENTS AVEC COULEURS SPÉCIALES ═══
+    # ═══ ÉVÉNEMENTS ═══
     for day_index, events in week_events.items():
         if day_index >= 5:
             continue
@@ -549,104 +579,73 @@ def create_maximum_visibility_edt(group_name, week_events, week_dates):
             if event_height < 10:
                 continue
             
-            # COULEUR SELON LE TYPE ET STATUT
-            if event['course_info']['is_cancelled']:
-                # ROUGE SOMBRE pour annulé
-                color = SPECIAL_COLORS['cancelled']
-            elif event['course_info']['is_makeup']:
-                # ORANGE DORÉ pour rattrapage
-                color = SPECIAL_COLORS['makeup']
-            else:
-                # Couleur normale selon le type
-                course_type = event['course_info']['type_cours'] or 'default'
-                color = COURSE_COLORS.get(course_type, COURSE_COLORS['default'])
+            # COULEUR PRINCIPALE = MATIÈRE
+            matiere = event['course_info']['matiere'] or 'Défaut'
+            main_color = get_subject_color(matiere)
             
-            # Rectangle arrondi
+            # COULEUR BANDE LATÉRALE = TYPE
+            course_type = event['course_info']['type_cours'] or 'default'
+            side_color = TYPE_COLORS.get(course_type, TYPE_COLORS['default'])
+            
+            # Rattrapage -> couleur spéciale
+            if event['course_info']['is_makeup']:
+                main_color = SPECIAL_COLORS['makeup']
+            
             padding = 4
+            
+            # Fond principal (couleur matière)
             draw.rounded_rectangle(
                 [x_day + padding, y_event_start + padding, 
                  x_day + DAY_WIDTH - padding, y_event_end - padding],
                 radius=10,
-                fill=color,
-                outline=color
+                fill=main_color
             )
             
-            # CONTENU PARFAITEMENT CENTRÉ
-            x_start = x_day + padding
-            x_end = x_day + DAY_WIDTH - padding
+            # BANDE LATÉRALE GAUCHE (couleur type)
+            band_width = 8
+            draw.rounded_rectangle(
+                [x_day + padding, y_event_start + padding,
+                 x_day + padding + band_width, y_event_end - padding],
+                radius=10,
+                fill=side_color
+            )
+            
+            # CONTENU CENTRÉ
+            x_start = x_day + padding + band_width + 8
+            x_end = x_day + DAY_WIDTH - padding - 8
             current_y = y_event_start + 12
             
-            # Badge événement spécial (centré en haut)
-            if event['course_info']['special_event']:
-                special_text = event['course_info']['special_event']
-                bbox = draw.textbbox((0, 0), special_text, font=fonts['small'])
-                badge_width = (bbox[2] - bbox[0]) + 14
-                center_x = (x_start + x_end) // 2
-                badge_x = center_x - (badge_width // 2)
-                badge_y = y_event_start + 8
-                
-                badge_color = (255, 255, 255) if event['course_info']['is_cancelled'] else (255, 255, 255)
-                text_color = (0, 0, 0)
-                
-                draw.rounded_rectangle(
-                    [badge_x, badge_y, badge_x + badge_width, badge_y + 20],
-                    radius=10,
-                    fill=badge_color
-                )
-                bbox_text = draw.textbbox((0, 0), special_text, font=fonts['small'])
-                text_w = bbox_text[2] - bbox_text[0]
-                draw.text((badge_x + (badge_width - text_w) // 2, badge_y + 4), special_text, 
-                         fill=text_color, font=fonts['small'])
-                current_y += 32
-            
-            # HORAIRES (ÉNORMES et CENTRÉS)
+            # 1. HORAIRES (BLANC PUR, GRAS, ÉNORME)
             start_time = event['start'].strftime('%H:%M')
             end_time = event['end'].strftime('%H:%M')
             time_text = f"{start_time} - {end_time}"
-            h = draw_centered_text(draw, time_text, fonts['event_time'], current_y, x_start, x_end, COLORS['text_bright'])
-            current_y += h + 8
+            h = draw_centered_text(draw, time_text, fonts['event_time'], current_y, x_start, x_end, (255, 255, 255))
+            current_y += h + 10
             
-            # SÉPARATEUR VISUEL (petite ligne)
-            sep_width = 60
-            center_x = (x_start + x_end) // 2
-            draw.line([(center_x - sep_width//2, current_y), (center_x + sep_width//2, current_y)], 
-                     fill=(255, 255, 255, 100), width=2)
-            current_y += 8
+            # 2. MATIÈRE - TYPE (centré)
+            matiere_display = matiere[:28]
+            type_display = f" - {course_type}" if course_type and course_type != 'default' else ""
+            matiere_text = f"{matiere_display}{type_display}"
             
-            # MATIÈRE (ÉNORME et CENTRÉE)
-            matiere = event['course_info']['matiere']
-            if matiere and current_y < y_event_end - 50:
-                matiere_short = matiere[:30]
-                type_suffix = f" - {event['course_info']['type_cours']}" if event['course_info']['type_cours'] else ""
-                matiere_text = f"{matiere_short}{type_suffix}"
-                
-                lines = wrap_text(matiere_text, fonts['event_matiere'], DAY_WIDTH - 20, draw)
-                for line in lines[:2]:
-                    if current_y < y_event_end - 40:
-                        h = draw_centered_text(draw, line, fonts['event_matiere'], current_y, x_start, x_end, COLORS['text_bright'])
-                        current_y += h + 4
+            lines = wrap_text(matiere_text, fonts['event_matiere'], (x_end - x_start), draw)
+            for line in lines[:2]:
+                if current_y < y_event_end - 40:
+                    h = draw_centered_text(draw, line, fonts['event_matiere'], current_y, x_start, x_end, COLORS['text_bright'])
+                    current_y += h + 6
             
-            # SÉPARATEUR VISUEL
-            if current_y < y_event_end - 35:
-                sep_width = 60
-                center_x = (x_start + x_end) // 2
-                draw.line([(center_x - sep_width//2, current_y), (center_x + sep_width//2, current_y)], 
-                         fill=(255, 255, 255, 100), width=2)
-                current_y += 8
-            
-            # SALLE (CENTRÉE)
+            # 3. SALLE (centrée)
             location = event.get('location', '')
-            if location and current_y < y_event_end - 30:
-                location_short = location[:28]
+            if location and current_y < y_event_end - 28:
+                location_short = location[:26]
                 h = draw_centered_text(draw, location_short, fonts['event_info'], current_y, x_start, x_end, COLORS['text_bright'])
-                current_y += h + 5
+                current_y += h + 6
             
-            # PROF (CENTRÉ)
+            # 4. PROFESSEUR (centré)
             prof = event['course_info']['professeur']
-            if prof and current_y < y_event_end - 18:
+            if prof and current_y < y_event_end - 16:
                 draw_centered_text(draw, prof, fonts['event_info'], current_y, x_start, x_end, COLORS['text_bright'])
     
-    # ═══ FOOTER AVEC STATS ═══
+    # ═══ FOOTER ═══
     footer_y = HEIGHT - FOOTER_HEIGHT
     draw.rectangle([0, footer_y, WIDTH, HEIGHT], fill=COLORS['header'])
     
@@ -654,8 +653,8 @@ def create_maximum_visibility_edt(group_name, week_events, week_dates):
     
     stats_parts = [f"{stats['total_courses']} cours", f"{stats['total_hours']:.1f}h", f"{stats['total_courses']/5:.1f} cours/jour"]
     
-    if stats['cancelled_count'] > 0:
-        stats_parts.append(f"{stats['cancelled_count']} annule(s)")
+    if stats['tutorat_count'] > 0:
+        stats_parts.append(f"{stats['tutorat_count']} tutorat(s)")
     
     if stats['makeup_count'] > 0:
         stats_parts.append(f"{stats['makeup_count']} rattrapage(s)")
@@ -663,17 +662,17 @@ def create_maximum_visibility_edt(group_name, week_events, week_dates):
     stats_text = "  •  ".join(stats_parts)
     
     bbox = draw.textbbox((0, 0), stats_text, font=fonts['date'])
-    draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, footer_y + 10),
+    draw.text(((WIDTH - (bbox[2] - bbox[0])) // 2, footer_y + 12),
              stats_text, fill=COLORS['text_bright'], font=fonts['date'])
     
-    # Légende avec couleurs spéciales
+    # Légende
     legend_x = 20
-    legend_y = footer_y + 12
+    legend_y = footer_y + 14
     legend_items = [
-        ("CM", COURSE_COLORS['CM']), 
-        ("TD", COURSE_COLORS['TD']), 
-        ("TP", COURSE_COLORS['TP']), 
-        ("Annule", SPECIAL_COLORS['cancelled']),
+        ("CM", TYPE_COLORS['CM']), 
+        ("TD", TYPE_COLORS['TD']), 
+        ("TP", TYPE_COLORS['TP']), 
+        ("Tutorat", TYPE_COLORS['Tutorat']),
         ("Rattrapage", SPECIAL_COLORS['makeup'])
     ]
     
@@ -681,7 +680,7 @@ def create_maximum_visibility_edt(group_name, week_events, week_dates):
         draw.rounded_rectangle([legend_x, legend_y, legend_x + 14, legend_y + 14], 
                               radius=4, fill=color)
         draw.text((legend_x + 18, legend_y + 1), label, fill=COLORS['text_bright'], font=fonts['small'])
-        legend_x += 90
+        legend_x += 95
     
     logger.info(f"✅ Image générée: {WIDTH}x{HEIGHT}px")
     return img
@@ -712,13 +711,13 @@ def send_to_discord(group_name, image, week_dates, stats):
             message_lines.append(f"📊 **{stats['total_courses']} cours** ({stats['total_hours']:.1f}h)")
             
             if stats['by_type']:
-                types_emojis = {'CM': '📚', 'TD': '✏️', 'TP': '💻', 'Examen': '📝', 'Projet': '🎯'}
-                type_details = [f"{types_emojis.get(ct, '📖')} {ct}: {c}" for ct, c in stats['by_type'].most_common(4)]
+                types_emojis = {'CM': '📚', 'TD': '✏️', 'TP': '💻', 'Examen': '📝', 'Projet': '🎯', 'Tutorat': '👥'}
+                type_details = [f"{types_emojis.get(ct, '📖')} {ct}: {c}" for ct, c in stats['by_type'].most_common(5)]
                 message_lines.append("🎯 " + " • ".join(type_details))
             
-            if stats['cancelled_count'] > 0:
+            if stats['tutorat_count'] > 0:
                 message_lines.append(f"")
-                message_lines.append(f"🚫 **{stats['cancelled_count']} cours annulé(s)**")
+                message_lines.append(f"👥 **{stats['tutorat_count']} séance(s) de tutorat**")
             
             if stats['makeup_count'] > 0:
                 message_lines.append(f"🔄 **{stats['makeup_count']} rattrapage(s)**")
@@ -752,7 +751,7 @@ def send_to_discord(group_name, image, week_dates, stats):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    print("🎓 EDT BOT - VISIBILITÉ MAXIMALE")
+    print("🎓 EDT BOT - VERSION FINALE OPTIMALE")
     start_time = time.time()
     
     week_offset, _ = determine_week_mode()
@@ -771,7 +770,7 @@ def main():
             week_events = filter_events_for_week(events, week_dates)
             stats = calculate_statistics(week_events)
             
-            image = create_maximum_visibility_edt(group_name, week_events, week_dates)
+            image = create_optimal_edt(group_name, week_events, week_dates)
             
             if send_to_discord(group_name, image, week_dates, stats):
                 success_count += 1
