@@ -1,13 +1,13 @@
 name: 🎓 EDT Bot L2 INFO - Ultra v2.0
 
 on:
-  schedule:
+  #schedule:
     # Dimanche à 18:00 Paris (semaine suivante)
-    - cron: "0 17 * * 0"  # Hiver (nov-mars): 18h Paris = 17h UTC
+    #- cron: "0 17 * * 0"  # Hiver (nov-mars): 18h Paris = 17h UTC
     #- cron: "0 16 * * 0"  # Été (mars-oct): 18h Paris = 16h UTC (décommenter en été)
     
     # Mercredi à 06:00 Paris (semaine courante)
-    - cron: "0 5 * * 3"   # Hiver: 6h Paris = 5h UTC
+    #- cron: "0 5 * * 3"   # Hiver: 6h Paris = 5h UTC
     #- cron: "0 4 * * 3"   # Été: 6h Paris = 4h UTC (décommenter en été)
     
   workflow_dispatch:
