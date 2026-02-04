@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-🎓 EDT Bot L2 INFO - VERSION FINALE PARFAITE
+🎓 EDT Bot L2 INFO - VERSION FINALE GLASSMORPHISM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Version finale avec:
-- Couleurs pastel douces (pas ternes)
-- Style élégant fond foncé + texte blanc
-- URL Groupe 3 corrigée
-- Nettoyage complet des \n
-- Apostrophes corrigées
+Effet glassmorphism moderne:
+- Couleurs vives avec transparence (alpha)
+- Texte blanc éclatant pour lisibilité
+- Horaires en couleur accent
+- Bordure légèrement visible
+- Extraction matière corrigée pour tous les groupes
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 import os
@@ -22,7 +22,7 @@ from io import BytesIO
 import logging
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🎨 CONFIGURATION VISUELLE
+# 🎨 CONFIGURATION VISUELLE GLASSMORPHISM
 # ═══════════════════════════════════════════════════════════════════════════════
 
 COLORS = {
@@ -31,7 +31,6 @@ COLORS = {
     'grid': (50, 58, 75),
     'text': (255, 255, 255),
     'text_bright': (255, 255, 255),
-    'shadow': (0, 0, 0),
 }
 
 # Couleurs TYPE (bande latérale)
@@ -46,54 +45,52 @@ TYPE_COLORS = {
     'default': (100, 110, 130) # Gris
 }
 
-# COULEURS PASTEL PAR MATIÈRE (douces mais pas ternes)
-SUBJECT_PASTEL_COLORS = {
-    # Algorithmique - BLEU PASTEL
-    'Algorithmique et programmation': (90, 130, 180),
-    'Algorithmique programmation 5': (90, 130, 180),
-    'Algorithmique': (90, 130, 180),
+# COULEURS VIVES POUR GLASSMORPHISM (RGB sans alpha ici)
+SUBJECT_GLASS_COLORS = {
+    # Algorithmique - BLEU VIF
+    'Algorithmique et programmation': (40, 120, 220),
+    'Algorithmique programmation 5': (40, 120, 220),
+    'Algorithmique': (40, 120, 220),
     
-    # Statistiques & Probas - ORANGE/OR PASTEL
-    'Statistique': (200, 160, 100),
-    'Probabilités': (180, 150, 110),
-    'Maths pour l\'info': (170, 140, 115),
+    # Statistiques - ORANGE VIF
+    'Statistique': (240, 160, 50),
+    'Probabilités': (230, 150, 60),
+    'Maths pour l\'info': (220, 140, 70),
     
-    # Système d'exploitation - VERT PASTEL
-    'Système d\'exploitation 1': (100, 160, 120),
-    'Système d exploitation': (100, 160, 120),
+    # Système d'exploitation - VERT VIF
+    'Système d\'exploitation 1': (50, 180, 100),
+    'Système d exploitation': (50, 180, 100),
     
-    # Anglais - ROUGE/ROSE PASTEL
-    'Anglais': (180, 110, 120),
+    # Anglais - ROUGE/ROSE VIF
+    'Anglais': (220, 60, 90),
     
-    # Web & Réseaux - CYAN/TURQUOISE PASTEL
-    'Informatique pour le web': (90, 150, 170),
+    # Web - CYAN VIF
+    'Informatique pour le web': (30, 170, 210),
     
-    # Java & Programmation - MARRON PASTEL
-    'Programmation avancée java': (160, 120, 100),
-    'Java avancé': (170, 130, 110),
-    'Java fonctionnel': (155, 125, 105),
-    'Programmation C': (145, 115, 95),
+    # Java - MARRON/ORANGE VIF
+    'Programmation avancée java': (200, 100, 50),
+    'Java avancé': (210, 110, 60),
+    'Java fonctionnel': (200, 105, 55),
+    'Programmation C': (180, 90, 50),
     
-    # Bases de données - VIOLET PASTEL
-    'Bases de données': (140, 110, 150),
-    'Base de données': (140, 110, 150),
-    'BDD': (140, 110, 150),
+    # BDD - VIOLET VIF
+    'Bases de données': (150, 60, 180),
+    'Base de données': (150, 60, 180),
     
-    # MPI - ROSE/MAGENTA PASTEL
-    'MPI': (170, 120, 150),
+    # MPI - MAGENTA VIF
+    'MPI': (210, 70, 160),
     
-    # Événements spéciaux
-    'Tutorat': (180, 170, 110),
-    'Kursus Festival de Rentrée': (130, 110, 150),
-    'Réunion de rentrée': (120, 130, 145),
-    'matière à préciser': (130, 135, 145),
+    # Événements
+    'Tutorat': (240, 200, 60),
+    'Kursus Festival de Rentrée': (140, 80, 180),
+    'Réunion de rentrée': (100, 140, 180),
     
-    # Défaut - BLEU-GRIS PASTEL (pas terne!)
-    'default': (110, 125, 155)
+    # Défaut - BLEU VIF
+    'default': (80, 120, 200)
 }
 
 SPECIAL_COLORS = {
-    'makeup': (100, 160, 120),  # VERT PASTEL pour rattrapage
+    'makeup': (50, 180, 100),  # Vert vif pour rattrapage
 }
 
 SPECIAL_EVENTS = {
@@ -122,7 +119,7 @@ WEBHOOKS = {
 EDT_URLS = {
     "Groupe 1": "https://hplanning.univ-lehavre.fr/Telechargements/ical/Edt_Gr1___L2_INFO.ics?version=2022.0.5.0&idICal=63D02C34E55C4FDF72F91012A61BEEEC&param=643d5b312e2e36325d2666683d3126663d3131313030",
     "Groupe 2": "https://hplanning.univ-lehavre.fr/Telechargements/ical/Edt_Gr2___L2_INFO.ics?version=2022.0.5.0&idICal=26AE2D440785C828832D3B6683DDDFE2&param=643d5b312e2e36325d2666683d3126663d3131313030",
-    "Groupe 3": "https://hplanning.univ-lehavre.fr/Telechargements/ical/Edt_Gr3___L2_INFO.ics?version=2022.0.5.0&idICal=9EB190174CC47B352D5A84DF3EAA355E&param=643d5b312e2e36325d2666683d3126663d3131313130",  # NOUVEAU LIEN CORRIGÉ
+    "Groupe 3": "https://hplanning.univ-lehavre.fr/Telechargements/ical/Edt_Gr3___L2_INFO.ics?version=2022.0.5.0&idICal=9EB190174CC47B352D5A84DF3EAA355E&param=643d5b312e2e36325d2666683d3126663d3131313130",
     "CM Communs": "https://hplanning.univ-lehavre.fr/Telechargements/ical/Edt_ST_L2___INFORMATIQUE.ics?version=2022.0.5.0&idICal=5306DEC43ABDB323BBC7726C2F6D4171&param=643d5b312e2e36325d2666683d3130313030"
 }
 
@@ -137,17 +134,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(
 logger = logging.getLogger(__name__)
 
 def get_subject_color(subject_name):
-    """Retourne une couleur pastel par matière"""
+    """Retourne une couleur vive pour glassmorphism"""
     if not subject_name:
-        return SUBJECT_PASTEL_COLORS['default']
+        return SUBJECT_GLASS_COLORS['default']
     
     normalized = ' '.join(subject_name.lower().split())
     
-    for key, color in SUBJECT_PASTEL_COLORS.items():
+    for key, color in SUBJECT_GLASS_COLORS.items():
         if key.lower() in normalized or normalized.startswith(key.lower()[:10]):
             return color
     
-    return SUBJECT_PASTEL_COLORS['default']
+    return SUBJECT_GLASS_COLORS['default']
 
 def get_paris_offset(dt):
     year = dt.year
@@ -261,25 +258,23 @@ def detect_special_event(summary, description=""):
     return None
 
 def fix_text_encoding(text):
-    """Corrige ? → ' et nettoie les \n"""
+    """Corrige apostrophes et nettoie les \n"""
     if not text:
         return text
     
-    # Apostrophes
     text = re.sub(r'd\?([a-zA-Zé])', r"d'\1", text)
     text = re.sub(r'l\?([a-zA-Zé])', r"l'\1", text)
     text = re.sub(r'n\?([a-zA-Zé])', r"n'\1", text)
     text = re.sub(r's\?([a-zA-Zé])', r"s'\1", text)
     text = re.sub(r'¿', "'", text)
     
-    # Nettoyer \n
     text = text.replace('\\n', ' ')
     text = text.replace('\n', ' ')
     
     return text.strip()
 
 def extract_course_info(summary, description=""):
-    """Extraction avec nettoyage complet"""
+    """Extraction ROBUSTE pour tous les groupes"""
     course_info = {
         'type_cours': '',
         'matiere': '',
@@ -306,47 +301,43 @@ def extract_course_info(summary, description=""):
     if special and 'RATTRAPAGE' in special:
         course_info['is_makeup'] = True
     
-    parts = [p.strip() for p in summary.split(' - ')]
-    
-    if len(parts) >= 5:
-        course_info['matiere'] = fix_text_encoding(parts[2])
-        course_info['professeur'] = fix_text_encoding(parts[3])
-        
-        if not course_info['is_tutorat']:
-            course_info['type_cours'] = parts[4].upper()
-        
-        if parts[0].startswith('Gr'):
-            course_info['groupe'] = parts[0]
-    
-    elif len(parts) >= 4:
-        course_info['matiere'] = fix_text_encoding(parts[2]) if len(parts) > 2 else ''
-        if len(parts) > 3 and not course_info['is_tutorat']:
-            last = parts[-1].upper()
-            if last in ['CM', 'TD', 'TP', 'EXAMEN', 'PARTIEL', 'PROJET']:
-                course_info['type_cours'] = last
-                if len(parts) > 3:
-                    course_info['professeur'] = fix_text_encoding(parts[-2])
-    
-    # Fallback DESCRIPTION
+    # TOUJOURS extraire depuis DESCRIPTION en priorité (plus fiable!)
     if description:
-        if not course_info['professeur']:
-            prof_match = re.search(r'Enseignant\s*:\s*([^\n\\]+)', description, re.IGNORECASE)
-            if prof_match:
-                prof_raw = prof_match.group(1).strip()
-                prof_clean = re.split(r'\\n|Salle\s*:', prof_raw)[0].strip()
-                course_info['professeur'] = fix_text_encoding(prof_clean)
+        # Matière
+        matiere_match = re.search(r'Matière\s*:\s*([^\n\\]+)', description, re.IGNORECASE)
+        if matiere_match:
+            matiere_raw = matiere_match.group(1).strip()
+            matiere_clean = re.split(r'\\n|<br', matiere_raw)[0].strip()
+            course_info['matiere'] = fix_text_encoding(matiere_clean)
         
-        if not course_info['matiere']:
-            matiere_match = re.search(r'Matière\s*:\s*([^\n\\]+)', description, re.IGNORECASE)
-            if matiere_match:
-                matiere_raw = matiere_match.group(1).strip()
-                matiere_clean = re.split(r'\\n|<br', matiere_raw)[0].strip()
-                course_info['matiere'] = fix_text_encoding(matiere_clean)
+        # Professeur
+        prof_match = re.search(r'Enseignant\s*:\s*([^\n\\]+)', description, re.IGNORECASE)
+        if prof_match:
+            prof_raw = prof_match.group(1).strip()
+            prof_clean = re.split(r'\\n|Salle\s*:', prof_raw)[0].strip()
+            course_info['professeur'] = fix_text_encoding(prof_clean)
         
-        if not course_info['type_cours'] and not course_info['is_tutorat']:
+        # Type
+        if not course_info['is_tutorat']:
             type_match = re.search(r'Type\s*:\s*(\w+)', description, re.IGNORECASE)
             if type_match:
                 course_info['type_cours'] = type_match.group(1).upper()
+    
+    # Fallback SUMMARY si description vide
+    if not course_info['matiere'] or not course_info['professeur']:
+        parts = [p.strip() for p in summary.split(' - ')]
+        
+        if len(parts) >= 5:
+            if not course_info['matiere']:
+                course_info['matiere'] = fix_text_encoding(parts[2])
+            if not course_info['professeur']:
+                course_info['professeur'] = fix_text_encoding(parts[3])
+            
+            if not course_info['type_cours'] and not course_info['is_tutorat']:
+                course_info['type_cours'] = parts[4].upper()
+            
+            if parts[0].startswith('Gr'):
+                course_info['groupe'] = parts[0]
     
     return course_info
 
@@ -531,8 +522,8 @@ def draw_centered_text(draw, text, font, y, x_start, x_end, color):
     draw.text((x, y), text, fill=color, font=font)
     return bbox[3] - bbox[1]
 
-def create_perfect_pastel_edt(group_name, week_events, week_dates):
-    """EDT final avec couleurs pastel élégantes"""
+def create_glassmorphism_edt(group_name, week_events, week_dates):
+    """EDT final avec effet glassmorphism"""
     
     WIDTH = 1600
     HEIGHT = 1100
@@ -603,7 +594,7 @@ def create_perfect_pastel_edt(group_name, week_events, week_dates):
         x = TIME_COL_WIDTH + (i * DAY_WIDTH)
         draw.line([(x, y_day_header), (x, HEIGHT - FOOTER_HEIGHT)], fill=COLORS['grid'], width=2)
     
-    # ═══ ÉVÉNEMENTS ═══
+    # ═══ ÉVÉNEMENTS GLASSMORPHISM ═══
     for day_index, events in week_events.items():
         if day_index >= 5:
             continue
@@ -624,27 +615,38 @@ def create_perfect_pastel_edt(group_name, week_events, week_dates):
             if event_height < 10:
                 continue
             
-            # COULEUR PASTEL PAR MATIÈRE
+            # Couleur vive
             matiere = event['course_info']['matiere'] or 'Défaut'
-            main_color = get_subject_color(matiere)
+            base_color = get_subject_color(matiere)
             
             course_type = event['course_info']['type_cours'] or 'default'
             side_color = TYPE_COLORS.get(course_type, TYPE_COLORS['default'])
             
             if event['course_info']['is_makeup']:
-                main_color = SPECIAL_COLORS['makeup']
+                base_color = SPECIAL_COLORS['makeup']
             
             padding = 4
             
-            # Fond principal
+            # GLASSMORPHISM: Fond avec transparence (alpha = 100 sur 255)
+            glass_color = base_color + (100,)  # RGBA avec alpha
             draw.rounded_rectangle(
                 [x_day + padding, y_event_start + padding, 
                  x_day + DAY_WIDTH - padding, y_event_end - padding],
                 radius=10,
-                fill=main_color
+                fill=glass_color
             )
             
-            # Bande latérale
+            # Bordure légèrement visible (même couleur, plus opaque)
+            border_color = base_color + (180,)
+            draw.rounded_rectangle(
+                [x_day + padding, y_event_start + padding, 
+                 x_day + DAY_WIDTH - padding, y_event_end - padding],
+                radius=10,
+                outline=border_color,
+                width=2
+            )
+            
+            # Bande latérale TYPE
             band_width = 8
             draw.rounded_rectangle(
                 [x_day + padding, y_event_start + padding,
@@ -653,7 +655,7 @@ def create_perfect_pastel_edt(group_name, week_events, week_dates):
                 fill=side_color
             )
             
-            # CONTENU
+            # CONTENU - TEXTE BLANC
             x_start = x_day + padding + band_width + 8
             x_end = x_day + DAY_WIDTH - padding - 8
             current_y = y_event_start + 10
@@ -677,14 +679,14 @@ def create_perfect_pastel_edt(group_name, week_events, week_dates):
                 font_info = fonts['event_info_small']
                 spacing = 6
             
-            # 1. HORAIRES
+            # 1. HORAIRES (BLANC ÉCLATANT)
             start_time = event['start'].strftime('%H:%M')
             end_time = event['end'].strftime('%H:%M')
             time_text = f"{start_time} - {end_time}"
             h = draw_centered_text(draw, time_text, font_time, current_y, x_start, x_end, (255, 255, 255))
             current_y += h + spacing
             
-            # 2. MATIÈRE - TYPE
+            # 2. MATIÈRE - TYPE (BLANC)
             matiere_display = matiere[:30]
             type_display = f" - {course_type}" if course_type and course_type != 'default' else ""
             matiere_text = f"{matiere_display}{type_display}"
@@ -692,22 +694,22 @@ def create_perfect_pastel_edt(group_name, week_events, week_dates):
             lines = wrap_text(matiere_text, font_matiere, max_text_width, draw)
             for line in lines[:2]:
                 if current_y < y_event_end - 35:
-                    h = draw_centered_text(draw, line, font_matiere, current_y, x_start, x_end, COLORS['text_bright'])
+                    h = draw_centered_text(draw, line, font_matiere, current_y, x_start, x_end, (255, 255, 255))
                     current_y += h + 5
             
-            # 3. SALLE
+            # 3. SALLE (BLANC)
             location = event.get('location', '')
             if location and current_y < y_event_end - 25:
                 location_short = location[:28]
-                h = draw_centered_text(draw, location_short, font_info, current_y, x_start, x_end, COLORS['text_bright'])
+                h = draw_centered_text(draw, location_short, font_info, current_y, x_start, x_end, (255, 255, 255))
                 current_y += h + 5
             
-            # 4. PROFESSEUR
+            # 4. PROFESSEUR (BLANC)
             prof = event['course_info']['professeur']
             if prof and current_y < y_event_end - 15:
                 prof_clean = prof.split('\n')[0].split('\\n')[0].strip()
                 if prof_clean:
-                    draw_centered_text(draw, prof_clean, font_info, current_y, x_start, x_end, COLORS['text_bright'])
+                    draw_centered_text(draw, prof_clean, font_info, current_y, x_start, x_end, (255, 255, 255))
     
     # ═══ FOOTER ═══
     footer_y = HEIGHT - FOOTER_HEIGHT
@@ -807,7 +809,7 @@ def send_to_discord(group_name, image, week_dates, stats):
         return False
 
 def main():
-    print("🎓 EDT BOT - VERSION FINALE PARFAITE")
+    print("🎓 EDT BOT - GLASSMORPHISM")
     start_time = time.time()
     
     week_offset, _ = determine_week_mode()
@@ -827,7 +829,7 @@ def main():
             week_events = filter_events_for_week(events, week_dates)
             stats = calculate_statistics(week_events)
             
-            image = create_perfect_pastel_edt(group_name, week_events, week_dates)
+            image = create_glassmorphism_edt(group_name, week_events, week_dates)
             
             if send_to_discord(group_name, image, week_dates, stats):
                 success_count += 1
