@@ -303,11 +303,12 @@ def extract_course_info(summary, description=""):
     
     # TOUJOURS extraire depuis DESCRIPTION en priorité (plus fiable!)
     if description:
-        # Matière
+        # Matière - NETTOYER COMPLÈTEMENT
         matiere_match = re.search(r'Matière\s*:\s*([^\n\\]+)', description, re.IGNORECASE)
         if matiere_match:
             matiere_raw = matiere_match.group(1).strip()
-            matiere_clean = re.split(r'\\n|<br', matiere_raw)[0].strip()
+            # Couper AVANT \n, Enseignant, <br, etc.
+            matiere_clean = re.split(r'\\n|<br|Enseignant|Salle', matiere_raw, flags=re.IGNORECASE)[0].strip()
             course_info['matiere'] = fix_text_encoding(matiere_clean)
         
         # Professeur
