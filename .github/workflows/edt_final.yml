@@ -46,6 +46,14 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
+
+      - name: 📂 Restore EDT cache
+        uses: actions/cache/restore@v4
+        with:
+          path: edt_cache.json
+          key: edt-cache-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            edt-cache-${{ runner.os }}-
       
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -103,6 +111,13 @@ jobs:
           
           python edt_bot_final.py
       
+      - name: 💾 Save EDT cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: edt_cache.json
+          key: edt-cache-${{ runner.os }}-${{ github.run_id }}
+
       - name: 📊 Upload logs (si échec)
         if: failure()
         uses: actions/upload-artifact@v4
