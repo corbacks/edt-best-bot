@@ -19,7 +19,36 @@ from datetime import datetime, timedelta, timezone
 from collections import defaultdict, Counter
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+import json
 import logging
+
+# Cache pour éviter les envois répétés pendant les vacances
+_base_dir = os.getenv("GITHUB_WORKSPACE") or os.path.dirname(os.path.abspath(__file__))
+EDT_CACHE_FILE = os.path.join(_base_dir, "edt_cache.json")
+
+def load_edt_cache():
+    """Charge le cache EDT"""
+    try:
+        if os.path.exists(EDT_CACHE_FILE):
+            with open(EDT_CACHE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Lecture cache EDT: {e}")
+    return {}
+
+def save_edt_cache(data):
+    """Sauvegarde le cache EDT"""
+    try:
+        with open(EDT_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"💾 Cache EDT sauvegardé")
+    except Exception as e:
+        print(f"⚠️ Sauvegarde cache EDT: {e}")
+
+def ensure_edt_cache_exists():
+    """Crée le fichier cache s'il n'existe pas (pour GitHub Actions cache/save)"""
+    if not os.path.exists(EDT_CACHE_FILE):
+        save_edt_cache({})
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 🎨 CONFIGURATION VISUELLE GLASSMORPHISM
@@ -809,39 +838,94 @@ def send_to_discord(group_name, image, week_dates, stats):
         logger.error(f"❌ Erreur: {e}")
         return False
 
+def get_iso_week_key(week_dates):
+    """Retourne une clé unique pour la semaine (ex: 2026-W09)"""
+    monday = week_dates[0]['date']
+    return monday.strftime("%G-W%V")
+
 def main():
     print("🎓 EDT BOT - GLASSMORPHISM")
     start_time = time.time()
-    
+
+    # Garantit l'existence du fichier cache pour GitHub Actions
+    ensure_edt_cache_exists()
+
     week_offset, _ = determine_week_mode()
     week_dates = get_week_dates(week_offset)
-    
+    week_key = get_iso_week_key(week_dates)
+    monday = week_dates[0]['formatted']
+    friday = week_dates[4]['formatted']
+
+    # ── Vérification cache vacances ────────────────────────────────────────────
+    cache = load_edt_cache()
+    if cache.get("empty_week") == week_key:
+        print(f"🏖️ Semaine {week_key} déjà notifiée comme vide — aucun envoi.")
+        return 0
+    # ──────────────────────────────────────────────────────────────────────────
+
     success_count = 0
-    
+    all_empty = True  # On suppose que tout est vide jusqu'à preuve du contraire
+
     for group_name, edt_url in EDT_URLS.items():
         try:
             logger.info(f"📋 {group_name}")
-            
+
             events = fetch_and_parse_edt(group_name, edt_url)
             if not events:
                 logger.warning(f"⚠️ Aucun événement pour {group_name}")
                 continue
-            
+
             week_events = filter_events_for_week(events, week_dates)
             stats = calculate_statistics(week_events)
-            
+
+            # Si au moins un groupe a des cours, ce n'est pas des vacances
+            if stats['total_courses'] > 0:
+                all_empty = False
+
             image = create_glassmorphism_edt(group_name, week_events, week_dates)
-            
+
             if send_to_discord(group_name, image, week_dates, stats):
                 success_count += 1
-            
+
             time.sleep(3)
-            
+
         except Exception as e:
             logger.error(f"❌ {group_name}: {e}")
             import traceback
             traceback.print_exc()
-    
+
+    # ── Si tous les groupes sont vides → vacances, on mémorise la semaine ─────
+    if all_empty and success_count == 0:
+        print(f"🏖️ EDT vide pour la semaine {week_key} ({monday} → {friday})")
+        print("   Aucun message envoyé. La semaine sera ignorée les prochains runs.")
+
+        # Envoie un seul message d'info sur le webhook CM Communs
+        webhook_url = WEBHOOKS.get("CM Communs")
+        role_id = ROLE_IDS.get("CM Communs")
+        if webhook_url:
+            try:
+                mention = f"<@&{role_id}>" if role_id else ""
+                payload = {
+                    "username": "📅 EDT Bot",
+                    "content": (
+                        f"{mention}\n\n"
+                        f"🏖️ **Pas de cours cette semaine !**\n"
+                        f"📆 **Du {monday} au {friday}**\n\n"
+                        f"_Profitez bien des vacances ! 😎_"
+                    )
+                }
+                requests.post(webhook_url, json=payload, timeout=15).raise_for_status()
+                print("✅ Message vacances envoyé")
+            except Exception as e:
+                print(f"⚠️ Impossible d'envoyer le message vacances: {e}")
+
+        # Mémorise la semaine dans le cache
+        save_edt_cache({"empty_week": week_key})
+    else:
+        # Semaine avec cours → réinitialise le cache vacances
+        save_edt_cache({})
+    # ──────────────────────────────────────────────────────────────────────────
+
     print(f"✅ {success_count}/{len(EDT_URLS)} envoyés en {time.time()-start_time:.1f}s")
     return 0 if success_count == len(EDT_URLS) else 1
 
