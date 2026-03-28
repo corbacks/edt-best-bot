@@ -5,8 +5,8 @@ on:
     # ⚠️ UNE SEULE EXÉCUTION PAR SEMAINE : Dimanche à 18h
     # Envoie la semaine SUIVANTE (lundi à vendredi)
     
-    - cron: "0 17 * * 0"  # Hiver (nov-mars): 18h Paris = 17h UTC
-    #- cron: "0 16 * * 0"  # Été (mars-oct): 18h Paris = 16h UTC (décommenter en été)
+    #- cron: "0 17 * * 0"  # Hiver (nov-mars): 18h Paris = 17h UTC
+    - cron: "0 16 * * 0"  # Été (mars-oct): 18h Paris = 16h UTC (décommenter en été)
     
   workflow_dispatch:
     inputs:
