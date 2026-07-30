@@ -70,9 +70,9 @@ CHANNELS = ["CM Communs", "GrA", "GrB", "GrC"]
 
 WEBHOOKS = {
     "CM Communs": os.environ.get("WEBHOOK_CM", "https://discordapp.com/api/webhooks/1420864305506549912/9MyUp5eggiLNDyuROGxu7tBRTae8URNyTmluZzjN2jrbMphlc5kffeJOiKL-uqWeKHWs"),
-    "GrA":        os.environ.get("WEBHOOK_GRA", "https://discordapp.com/api/webhooks/1421027773723709532/fYgHZUxwWKcI-dMLTLZfR-rsAT6ksZM5j7j1r1VhcCszgSviKB_gM1GY97QaL3jOH_Ci"),
-    "GrB":        os.environ.get("WEBHOOK_GRB", "https://discordapp.com/api/webhooks/1421028055509499935/rbokRUOnkzPNTapSc0Tnd64be0m4J-0lhSuj1y3Si56UaWxgidff3KlTLTW1tClbLfGz"),
-    "GrC":        os.environ.get("WEBHOOK_GRC", "https://discordapp.com/api/webhooks/1421028321734426665/us4sCIX7b0Csouf2j7v_r-OfrOcAqrqV0SeQ_Jbq0KNeb-fb9mw5KU73AksTTGOEHXZu"),
+    "GrA":        os.environ.get("WEBHOOK_GRA", "https://discord.com/api/webhooks/1532348301997772961/qNCW7LN0jpTDkPm4pne5JnD2abRGqJqVWTKsKdULvewl8AVuM31jX8-6Tqyu_IY6-l6u"),
+    "GrB":        os.environ.get("WEBHOOK_GRB", "https://discord.com/api/webhooks/1532352816453255238/_gPXvRqN14XTfjYfTLrznldmjfD5_YSmHNaWUWACdJY0MFeleEVCEQdjtY8wcRR0i5pS"),
+    "GrC":        os.environ.get("WEBHOOK_GRC", "https://discord.com/api/webhooks/1532353298726912002/9iIFE4LCSThalBL4F5E5usFUE1yyj-JijedthOzk_TtzNWYDSIwH6C4D1m7DXxk_-V2o"),
 }
 ROLE_IDS = {
     "CM Communs": os.environ.get("ROLE_CM", "1418998954380759141"),
