@@ -2,16 +2,20 @@ name: 🎓 EDT Bot — Le GOAT de l'EDT
 
 on:
   schedule:
-    # Dimanche 18h Paris (envoie la semaine suivante), été et hiver — le
-    # script ignore le run hors-saison (voir TARGET_HOUR / TOLERANCE_MIN
-    # dans edt_bot.py), pas besoin de changer le cron aux changements d'heure.
-    - cron: "0 16 * * 0"   # 18:00 Paris — heure d'été (UTC+2)
-    - cron: "0 17 * * 0"   # 18:00 Paris — heure d'hiver (UTC+1)
+    # Dimanche ~18h Paris (envoie la semaine suivante), été et hiver.
+    # GitHub Actions ne garantit pas l'heure exacte d'un cron "schedule" (des
+    # retards de plusieurs heures sont possibles sur les dépôts peu actifs) :
+    # ce n'est plus un problème ici, le script se protège des doublons via un
+    # verrou par semaine dans le cache (edt_cache.json), pas via une fenêtre
+    # horaire stricte. Peu importe lequel des deux crons ci-dessous se
+    # déclenche le premier (ou avec combien de retard), un seul envoi part.
+    - cron: "0 16 * * 0"   # ~18:00 Paris — heure d'été (UTC+2)
+    - cron: "0 17 * * 0"   # ~18:00 Paris — heure d'hiver (UTC+1)
 
   workflow_dispatch:
     inputs:
       force_run:
-        description: "Ignorer le garde-fou jour/horaire (test manuel)"
+        description: "Ignorer le verrou 'semaine déjà envoyée' (test manuel)"
         type: boolean
         default: true
       test_monday:
