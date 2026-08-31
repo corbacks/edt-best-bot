@@ -85,17 +85,15 @@ _base = os.getenv("GITHUB_WORKSPACE") or os.path.dirname(os.path.abspath(__file_
 CACHE_FILE = os.path.join(_base, "edt_cache.json")
 IMG_PATH = "/tmp/edt_{}.png"
 
-# Horaire d'envoi visé (heure de Paris) + garde-fou été/hiver, même mécanisme
-# que les autres bots (voir menu_bot.py / vacances_bot.py).
-TARGET_HOUR, TARGET_MINUTE = 18, 0
-TOLERANCE_MIN = 20
-FORCE_RUN = os.getenv("FORCE_RUN", "0") in ("1", "true", "True")
-
 # Permet de forcer le rendu d'une semaine précise (format AAAA-MM-JJ, n'importe
 # quel jour de la semaine visée — on retombe automatiquement sur le lundi).
 # Utile pour tester un rendu quand la semaine courante ET la semaine suivante
 # sont toutes les deux vides (vacances).
 TEST_MONDAY = os.getenv("TEST_MONDAY", "").strip()
+
+# Bypasse le verrou "semaine déjà envoyée" ci-dessous (voir cache) — utile
+# pour renvoyer manuellement une semaine déjà traitée en test.
+FORCE_RUN = os.getenv("FORCE_RUN", "0") in ("1", "true", "True")
 
 MONTHS_FR = ["", "janvier", "février", "mars", "avril", "mai", "juin",
              "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
@@ -111,11 +109,6 @@ def get_paris_now():
         return datetime.now(pytz.timezone("Europe/Paris"))
     except ImportError:
         return datetime.now()
-
-def matching_time_slot(now) -> bool:
-    cur = now.hour * 60 + now.minute
-    target = TARGET_HOUR * 60 + TARGET_MINUTE
-    return abs(cur - target) <= TOLERANCE_MIN
 
 def target_monday(today: date) -> tuple:
     """Retourne (monday, week_key, is_manual_test)."""
@@ -217,23 +210,23 @@ def main():
     now = get_paris_now()
     today = now.date() if hasattr(now, "date") else date.today()
 
-    if not TEST_MONDAY and not FORCE_RUN:
-        if now.weekday() != 6:  # 6 = dimanche
-            print(f"⏭️  Envoi hebdomadaire (dimanche seulement) — run ignoré.")
-            return
-        if not matching_time_slot(now):
-            print(f"⏭️  Hors créneau d'envoi ({now.strftime('%H:%M')}) — run ignoré.")
-            return
-
     monday, week_key, is_test = target_monday(today)
     friday = monday + timedelta(days=4)
     date_range = f"{monday.day} au {friday.day} {MONTHS_FR[friday.month]} {friday.year}"
-    print(f"📅 Semaine ciblée : {week_key}  ({date_range})"
+    print(f"📅 Semaine ciblée : {week_key}  ({date_range})  —  run le {now.strftime('%A %d/%m %H:%M')}"
           + ("  [TEST MANUEL]" if is_test else ""))
 
+    # Verrou hebdomadaire : la SEULE chose qui empêche un doublon, c'est
+    # d'avoir déjà traité cette semaine — peu importe l'heure ou le jour
+    # réel du run. GitHub Actions ne garantit pas l'heure d'un cron
+    # "schedule" (des retards de plusieurs heures sont courants sur les
+    # dépôts peu actifs) ; un garde-fou basé sur une fenêtre horaire stricte
+    # ferait sauter l'envoi entier d'une semaine si le run arrive en retard,
+    # sans aucun rattrapage. Ce verrou tolère n'importe quel retard : le bot
+    # envoie dès qu'il tourne, une seule fois par semaine cible.
     cache = load_cache()
-    if not is_test and cache.get("empty_week") == week_key:
-        print(f"🏖️ Semaine {week_key} déjà notifiée comme vide — aucun envoi.")
+    if not is_test and not FORCE_RUN and cache.get("last_sent_week") == week_key:
+        print(f"🔕 Semaine {week_key} déjà traitée — aucun envoi (pas de doublon).")
         return
 
     try:
@@ -293,10 +286,10 @@ def main():
             except Exception as e:
                 print(f"⚠️ Message vacances non envoyé : {e}")
         if not is_test:
-            save_cache({"empty_week": week_key})
+            save_cache({"last_sent_week": week_key})
     else:
         if not is_test:
-            save_cache({})
+            save_cache({"last_sent_week": week_key})
         print(f"✅ {sent}/{len(CHANNELS)} salons envoyés.")
 
 if __name__ == "__main__":
