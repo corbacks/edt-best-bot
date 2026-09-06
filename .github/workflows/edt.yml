@@ -9,8 +9,8 @@ on:
     # verrou par semaine dans le cache (edt_cache.json), pas via une fenêtre
     # horaire stricte. Peu importe lequel des deux crons ci-dessous se
     # déclenche le premier (ou avec combien de retard), un seul envoi part.
-    - cron: "0 16 * * 0"   # ~18:00 Paris — heure d'été (UTC+2)
-    - cron: "0 17 * * 0"   # ~18:00 Paris — heure d'hiver (UTC+1)
+    - cron: "0 12 * * 0"   # ~18:00 Paris — heure d'été (UTC+2)
+    - cron: "0 13 * * 0"   # ~18:00 Paris — heure d'hiver (UTC+1)
 
   workflow_dispatch:
     inputs:
